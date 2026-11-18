@@ -1,0 +1,19 @@
+namespace DeadSpin.Core.Economy
+{
+    /// <summary>Why money moved. Used for the transaction log, statistics and Game Master analysis.</summary>
+    public enum TransactionKind
+    {
+        StartingFunds,
+        WagerPlaced,
+        WagerRefunded,
+        Winnings,
+        Penalty,
+        Reward,
+        Purchase,
+        DebtPayment,
+        DebtIncrease,
+        DebtRelief,
+        ContractPayout,
+        Fee
+    }
+}
