@@ -15,41 +15,54 @@ abilities bought with Influence, and loopholes in the Game Master's rules.
 Design pillars: **gambling strategy**, **adaptation**, **survival**.
 Platform: Windows PC, keyboard and mouse first. All money is fictional.
 
-## Current implementation (Phase 1: Foundation)
+## Current implementation (all ten phases)
 
-Working now:
-- The whole game is played seated at the table from a top-down camera. Four framed views
-  (table, betting layout, wheel, the Game Master), smooth pan and zoom within limits.
-- Interaction: point with the mouse, hovered objects glow and show a prompt at the cursor,
-  click to inspect.
-- A procedurally generated greybox roulette room lit so the table is a pool of warm light and
-  the room falls away into fog and darkness around it.
-- A roulette table placeholder with wheel, betting layout grid and chip tray.
-- The Game Master sits across the table, rim-lit, his hands resting on the far rail.
-- Game modes (at table, paused, run ended) with a validated state machine.
-- Run state: $2,500 balance, $50,000 debt, 18 rounds, minimum bet, all configurable via a
-  `RunConfig` ScriptableObject.
-- Ledger with full transaction history; bankruptcy, freedom and deadline outcomes.
-- Round phase flow (announce, betting countdown, closed, spin, resolve, summary), ready for
-  the spin system in Phase 2.
-- HUD with balance, debt, round, prompts, pause menu, end-of-run screen and a developer panel.
+A full run is playable from the title screen to an ending. The core rules run headless and are
+covered by 161 tests; the Unity presentation is written and type-checked but not yet run in the
+Editor (see KNOWN_ISSUES.md).
 
-Phase 2 adds real roulette:
-- A procedural 37-pocket single-zero wheel (bowl, ball track, rotor, frets, numbers) built from
-  the wheel configuration, so any pocket count can be drawn.
-- The winning pocket is drawn first from the configuration's weights with the seeded RNG; the
-  ball animation is then planned backwards to land in it. The result is shown only after the
-  ball settles.
-- A full betting layout generated from the same definition the rules use: straight, split,
-  street, corner, six line, red/black, odd/even, low/high, dozens and columns (13 bet types).
-  Hovering a spot lights up every number it covers and shows its payout and exact odds.
-- Payouts are computed from the wheel's true odds with a 1/37 house edge, which reproduces the
-  classic table on a standard wheel and stays honest when the wheel changes.
-- Rounds: announcement, betting countdown (Space for no more bets), spin, settlement, summary.
-  Chip stacks on the felt, chip values, clearing bets, recent numbers, Game Master lines, and
-  paying the debt between rounds.
+**A run.** The title screen offers New run, Continue and Unlocks. Each run randomises the debt
+(about $45k to $60k), the starting balance, the Game Master's personality, the starting wheel,
+event weights and the final table's variant. Eighteen rounds over five stages; the Game Master
+greets you and the night begins. The run autosaves between rounds.
 
-Not yet implemented: dynamic wheels (Phase 3), physical chips (Phase 4), the Game Master's interventions (Phase 5), and everything after.
+**The table.** Procedural wheels from 12 to 100 pockets, with duplicates, weights, closed
+pockets, rings and extra balls. Every transformation is animated and the betting layout
+rebuilds to match. Payouts always follow the true odds of the current wheel. 13 traditional bet
+types and 7 special bets (neighbours, sequence, repeat, survivor, mystery, combination,
+jackpot). Five chip values and five special chip kinds. Shakes and tilts move chips according to
+their kind.
+
+**The Game Master.** He earns House Authority and spends it on 44 data-driven rules (wheel,
+payout, betting, table, economy, ability and presentation interventions), some hidden, some
+mid-bet. He models the player's habits, has moods and personalities, and speaks through a
+dialogue bank keyed by trigger, mood, stage and personality. Every rule has to leave a winnable
+bet; several have loopholes.
+
+**Economy.** A single Ledger holds balance, Vault and debt. Installments are due after rounds 7,
+11 and 15 (2%, 5% and 10% of the starting debt in total); one miss adds a late fee, a second
+ends the run. Eight contracts, penalties, rewards, mandatory wagers and bankruptcy warnings.
+
+**Special gameplay.** 10 special pockets (skull, jackpot, mystery, bomb, hourglass, tax,
+influence, debt relief, curse, golden ticket). Influence buys 12 abilities (Lucky Coin, House
+Inspection, Chip Anchor, Time Extension, Rule Peek, Rule Cancel, Wheel Analysis, House Audit and
+four consumables). 7 events including a sealed-bid auction, 7 challenges, predictions of his
+next move.
+
+**The casino.** You never leave your seat: the Lounge, Shop, Vault, Records Room and Office open
+as panels. Records hold the casino's history and its secrets; secrets and loopholes are
+evidence. Lights flicker and tint by stage, names appear on the walls, and the Game Master's
+figure breathes, nods, glares in his mood's colour and grows as the final table nears. Sound is
+synthesised, with hooks for recorded voice lines.
+
+**The end.** The final table runs in four phases: His House, His Game (a custom wheel), His
+Final Offer (The Deal, the Escape Clause or refuse) and The Last Spin. Six endings: The Deal, New
+Owner, Freedom, The Loophole, and two ways the house always wins. Every run earns Marks for 18
+permanent unlocks (personalities, wheels, starting kit, challenges, cosmetics).
+
+**Tools.** A balance simulator plays whole runs with four bot styles and checks invariants; the
+editor menu **Dead Spin > Simulate Runs** writes a report.
+
 See [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 
 ## Design decisions so far
@@ -64,4 +77,8 @@ See [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md).
 | Table-only, top-down camera; no free walking (owner's call, 2026-11-18) | Keeps every system and the player's attention on the table. Other rooms become menus or short transitions. |
 | Payout = (1 − edge) / P(win) − 1, rounded to cents of ratio | Classic payouts on a standard wheel; fair relative odds on any modified wheel |
 | Wagers count as losses only when resolved | Placing and taking back chips should not inflate loss statistics |
-| IMGUI for the Phase 1 HUD | No prefab or package dependencies; replaced in Phase 8 |
+| IMGUI for the whole HUD | No prefab or package dependencies; the final animated UI is a later polish step |
+| `CasinoRun` is the round director, pure C# | The whole game runs headless for tests and the balance simulator; Unity only presents it |
+| The Game Master changes odds, then payouts follow the true odds | Changes are visible and fair; his levers are pressure, variance and payout modifiers |
+| Rooms are panels over the table | Keeps the table-only design; no walking |
+| Runs save only between rounds | Saves never capture a half-resolved spin |
