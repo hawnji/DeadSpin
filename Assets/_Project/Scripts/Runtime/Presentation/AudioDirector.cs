@@ -16,7 +16,7 @@ namespace DeadSpin.Runtime.Presentation
 {
     /// <summary>
     /// Every sound in the prototype is synthesised at startup, so the game needs no audio assets:
-    /// an ambient drone that darkens with each stage, the ball rolling and clicking into pockets,
+    /// a quiet room tone that darkens with each stage, the ball rolling and clicking into pockets,
     /// chips, wins and losses, wheel transformations, shakes and a heartbeat when time or money
     /// runs low. Replace any cue by dropping a clip into a Resources/Audio folder with the cue's
     /// name (for example Resources/Audio/chip). The Game Master's lines play recorded voice clips
@@ -30,7 +30,9 @@ namespace DeadSpin.Runtime.Presentation
         [SerializeField] private RouletteTableController table;
         [SerializeField] private BallSpinAnimator ball;
         [Range(0f, 1f)] [SerializeField] private float effectsVolume = 0.8f;
-        [Range(0f, 1f)] [SerializeField] private float ambienceVolume = 0.35f;
+        [Tooltip("Quiet room tone under the game. Fades in when you sit at the table; silent on the title screen.")]
+        [Range(0f, 1f)] [SerializeField] private float roomToneVolume = 0.15f;
+        [Min(0.1f)] [SerializeField] private float roomToneFadeSeconds = 4f;
         [Range(0f, 1f)] [SerializeField] private float voiceVolume = 1f;
 
         private readonly Dictionary<string, AudioClip> _clips = new Dictionary<string, AudioClip>();
@@ -54,7 +56,7 @@ namespace DeadSpin.Runtime.Presentation
 
             Build();
             _ambience.clip = Clip("ambience");
-            _ambience.volume = ambienceVolume;
+            _ambience.volume = 0f;
             _ambience.Play();
             _roll.clip = Clip("roll");
             _heart.clip = Clip("heartbeat");
@@ -109,10 +111,12 @@ namespace DeadSpin.Runtime.Presentation
         private void Update()
         {
             CasinoRun casino = session != null ? session.Casino : null;
+            bool atTable = casino != null && session.Mode == GameMode.AtTable;
+            _ambience.volume = Mathf.MoveTowards(_ambience.volume, atTable ? roomToneVolume : 0f, Time.unscaledDeltaTime * roomToneVolume / roomToneFadeSeconds);
             if (casino == null) { _heart.volume = 0f; return; }
 
-            // The drone drops in pitch as the night goes on.
-            _ambience.pitch = Mathf.Lerp(_ambience.pitch, 1f - (casino.Stage - 1) * 0.06f - (casino.CurrentFinalPhase != Core.Progression.FinalPhase.None ? 0.1f : 0f), Time.deltaTime);
+            // The room tone darkens a little as the night goes on.
+            _ambience.pitch = Mathf.Lerp(_ambience.pitch, 1f - (casino.Stage - 1) * 0.03f - (casino.CurrentFinalPhase != Core.Progression.FinalPhase.None ? 0.05f : 0f), Time.deltaTime);
 
             bool lowTime = casino.Run.Round.Phase == RoundPhase.Betting && !casino.Table.Modifiers.SilentSpin && casino.Run.Round.TimeRemaining < 6f;
             bool danger = BankruptcyForecast.Worst(casino.Warnings()) >= WarningLevel.Danger;
@@ -240,12 +244,7 @@ namespace DeadSpin.Runtime.Presentation
                 double voice = Math.Sin(t * 2 * Math.PI * 110) * 0.5 + Math.Sin(t * 2 * Math.PI * 220) * 0.25 + Math.Sin(t * 2 * Math.PI * 330) * 0.1;
                 return voice * syllable * Env(t, 0.05f, 1.4f) * 0.5;
             });
-            Add("ambience", 8f, (t, i) =>
-            {
-                double drone = Math.Sin(t * 2 * Math.PI * 55) * 0.25 + Math.Sin(t * 2 * Math.PI * 82.5) * 0.15 + Math.Sin(t * 2 * Math.PI * 110.25) * 0.08;
-                double swell = 0.7 + 0.3 * Math.Sin(t * 2 * Math.PI / 8.0);
-                return drone * swell + Noise(random) * 0.02;
-            }, true);
+            AddRoomTone(random);
 
             // Recorded overrides.
             foreach (string cue in new List<string>(_clips.Keys))
@@ -253,6 +252,45 @@ namespace DeadSpin.Runtime.Presentation
                 AudioClip recorded = Resources.Load<AudioClip>("Audio/" + cue);
                 if (recorded != null) _clips[cue] = recorded;
             }
+        }
+
+        /// <summary>
+        /// The ambience: soft, low-passed noise (an underground room with a distant ventilation rush)
+        /// with a faint high chord that swells slowly. No pure bass tones, which read as electrical hum.
+        /// The end is crossfaded into the start so the 12-second loop has no seam.
+        /// </summary>
+        private void AddRoomTone(System.Random random)
+        {
+            const float seconds = 12f;
+            const float fade = 1.5f;
+            int count = Mathf.CeilToInt(seconds * Rate);
+            int fadeCount = Mathf.CeilToInt(fade * Rate);
+            var raw = new double[count + fadeCount];
+            double low = 0, lower = 0;
+            for (int i = 0; i < raw.Length; i++)
+            {
+                double t = (double)i / Rate;
+                // Two one-pole low-pass stages turn white noise into a soft rumble around 150 Hz.
+                low += (Noise(random) - low) * 0.02;
+                lower += (low - lower) * 0.02;
+                double swell = 0.6 + 0.4 * Math.Sin(t * 2 * Math.PI / 12.0);
+                double chord = (Math.Sin(t * 2 * Math.PI * 220) + Math.Sin(t * 2 * Math.PI * 277.5) * 0.7 + Math.Sin(t * 2 * Math.PI * 330) * 0.5) * 0.012 * swell;
+                raw[i] = lower * 3.0 + chord;
+            }
+            var data = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                double value = raw[i];
+                if (i < fadeCount)
+                {
+                    double k = (double)i / fadeCount;
+                    value = raw[count + i] * (1 - k) + raw[i] * k;
+                }
+                data[i] = (float)Math.Max(-1, Math.Min(1, value));
+            }
+            AudioClip clip = AudioClip.Create("ambience", count, 1, Rate, false);
+            clip.SetData(data, 0);
+            _clips["ambience"] = clip;
         }
 
         private void Add(string cue, float seconds, Func<double, int, double> sample, bool loop = false)
