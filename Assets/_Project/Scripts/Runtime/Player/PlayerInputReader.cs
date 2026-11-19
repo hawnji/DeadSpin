@@ -58,6 +58,11 @@ namespace DeadSpin.Runtime.Player
                 frame.NextViewPressed = keyboard.tabKey.wasPressedThisFrame;
                 frame.BackPressed = keyboard.escapeKey.wasPressedThisFrame;
                 frame.DebugTogglePressed = keyboard.f1Key.wasPressedThisFrame;
+                frame.ActionPressed = keyboard.spaceKey.wasPressedThisFrame;
+                frame.ChipPreviousPressed = keyboard.qKey.wasPressedThisFrame;
+                frame.ChipNextPressed = keyboard.eKey.wasPressedThisFrame;
+                frame.RemoveModifierHeld = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
+                frame.ClearBetsPressed = keyboard.backspaceKey.wasPressedThisFrame;
                 if (keyboard.digit1Key.wasPressedThisFrame) frame.ViewSelected = 0;
                 else if (keyboard.digit2Key.wasPressedThisFrame) frame.ViewSelected = 1;
                 else if (keyboard.digit3Key.wasPressedThisFrame) frame.ViewSelected = 2;
@@ -88,6 +93,11 @@ namespace DeadSpin.Runtime.Player
             frame.NextViewPressed = Input.GetKeyDown(KeyCode.Tab);
             frame.BackPressed = Input.GetKeyDown(KeyCode.Escape);
             frame.DebugTogglePressed = Input.GetKeyDown(KeyCode.F1);
+            frame.ActionPressed = Input.GetKeyDown(KeyCode.Space);
+            frame.ChipPreviousPressed = Input.GetKeyDown(KeyCode.Q);
+            frame.ChipNextPressed = Input.GetKeyDown(KeyCode.E);
+            frame.RemoveModifierHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+            frame.ClearBetsPressed = Input.GetKeyDown(KeyCode.Backspace);
             if (Input.GetKeyDown(KeyCode.Alpha1)) frame.ViewSelected = 0;
             else if (Input.GetKeyDown(KeyCode.Alpha2)) frame.ViewSelected = 1;
             else if (Input.GetKeyDown(KeyCode.Alpha3)) frame.ViewSelected = 2;

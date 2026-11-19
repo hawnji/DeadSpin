@@ -7,7 +7,7 @@ rules. Win enough to buy your freedom before the rounds run out.
 
 All currency in the game is fictional. There is no real-money gambling of any kind.
 
-**Status:** Phase 1 (Foundation). See [Docs/DEVELOPMENT_ROADMAP.md](Docs/DEVELOPMENT_ROADMAP.md).
+**Status:** Phase 2 (Core roulette): a playable single-zero roulette table. See [Docs/DEVELOPMENT_ROADMAP.md](Docs/DEVELOPMENT_ROADMAP.md).
 
 ## Requirements
 
@@ -48,7 +48,12 @@ legacy Input Manager or with "Both".
 
 | Action | Input |
 |---|---|
-| Inspect / select | Left click |
+| Start a round / no more bets | Space |
+| Place a chip on a spot | Left click |
+| Take a chip back | Shift + left click |
+| Choose chip value ($10, $25, $100, $500) | Q / E, or the chip buttons |
+| Return all chips | Backspace, or Clear |
+| Inspect the wheel, chip tray, Game Master | Left click |
 | Pan across the table | WASD or arrow keys, or drag with right / middle mouse |
 | Zoom | Scroll wheel |
 | Switch view (table, betting layout, wheel, Game Master) | 1–4, Tab, or the tabs at the top |

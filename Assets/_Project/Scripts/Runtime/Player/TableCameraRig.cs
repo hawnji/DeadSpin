@@ -99,8 +99,8 @@ namespace DeadSpin.Runtime.Player
             return new[]
             {
                 new ViewPreset("Table", new Vector3(0f, 0.86f, 0.1f), 62f, 0f, 3.4f, 45f, true),
-                new ViewPreset("Betting layout", new Vector3(0.45f, 0.86f, 0.05f), 78f, 0f, 2.0f, 45f, true),
-                new ViewPreset("Wheel", new Vector3(-1.12f, 0.9f, 0f), 80f, 0f, 1.35f, 45f, true),
+                new ViewPreset("Betting layout", new Vector3(0.5f, 0.86f, -0.03f), 76f, 0f, 2.2f, 45f, true),
+                new ViewPreset("Wheel", new Vector3(-1.12f, 0.92f, 0f), 72f, 0f, 1.45f, 45f, true),
                 new ViewPreset("The Game Master", new Vector3(0.2f, 1.75f, 1.6f), 14f, 0f, 2.9f, 40f, false)
             };
         }

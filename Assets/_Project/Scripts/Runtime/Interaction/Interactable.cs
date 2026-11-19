@@ -38,6 +38,12 @@ namespace DeadSpin.Runtime.Interaction
         {
             IsFocused = focused;
             ApplyHighlight(focused);
+            OnFocusChanged(focused);
+        }
+
+        /// <summary>Extra feedback for subclasses (e.g. lighting up every number a bet covers).</summary>
+        protected virtual void OnFocusChanged(bool focused)
+        {
         }
 
         private void ApplyHighlight(bool on)

@@ -8,6 +8,9 @@ is the source of truth for scope; this list records decisions and extras found a
 - Configuration diff to drive transformations and bet migration.
 - Payouts computed from true probability with a configurable house edge per rule set.
 - Wheel camera view follows the ball during a spin.
+- Re-bet last round's chips with one key.
+- Racetrack / neighbour bets (Phase 7 special bets).
+- Odds overlay for the whole layout (the Wheel Analysis ability).
 - Simulation tests: 1,000,000 spins per supported pocket count.
 
 ## Phase 4: Chips

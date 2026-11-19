@@ -24,5 +24,14 @@ namespace DeadSpin.Runtime.Player
         /// <summary>Esc: pause / back.</summary>
         public bool BackPressed;
         public bool DebugTogglePressed;
+        /// <summary>Space: start the round, or call "no more bets" while betting.</summary>
+        public bool ActionPressed;
+        /// <summary>Q / E: previous / next chip value.</summary>
+        public bool ChipPreviousPressed;
+        public bool ChipNextPressed;
+        /// <summary>Shift held: clicks take chips off instead of adding them.</summary>
+        public bool RemoveModifierHeld;
+        /// <summary>Backspace: return every chip on the table to the player.</summary>
+        public bool ClearBetsPressed;
     }
 }

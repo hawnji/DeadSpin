@@ -55,7 +55,8 @@ namespace DeadSpin.Core.Economy
             RequirePositive(amount);
             if (Balance < amount) return false;
             Balance -= amount;
-            if (kind == TransactionKind.WagerPlaced || kind == TransactionKind.Penalty || kind == TransactionKind.Fee)
+            // Wagers are not losses until they are resolved; see RecordWagerLost.
+            if (kind == TransactionKind.Penalty || kind == TransactionKind.Fee)
             {
                 TotalLosses = checked(TotalLosses + amount);
             }
@@ -88,6 +89,17 @@ namespace DeadSpin.Core.Economy
             Debt -= payment;
             Record(TransactionKind.DebtPayment, -payment, -payment, reason);
             return payment;
+        }
+
+        /// <summary>
+        /// Logs a lost wager whose money already left the balance when it was placed. No balance
+        /// change; updates loss statistics used by the end screen and (later) the Game Master.
+        /// </summary>
+        public void RecordWagerLost(long amount, string reason)
+        {
+            RequirePositive(amount);
+            TotalLosses = checked(TotalLosses + amount);
+            Record(TransactionKind.WagerLost, 0, 0, reason);
         }
 
         public void IncreaseDebt(long amount, string reason)
