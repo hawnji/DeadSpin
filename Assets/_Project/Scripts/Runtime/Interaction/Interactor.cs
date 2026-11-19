@@ -1,5 +1,6 @@
 using System;
 using DeadSpin.Runtime.Player;
+using DeadSpin.Runtime.UI;
 using UnityEngine;
 
 namespace DeadSpin.Runtime.Interaction
@@ -64,6 +65,7 @@ namespace DeadSpin.Runtime.Interaction
         private IInteractable FindTarget(Vector2 pointer)
         {
             if (pointer.x < 0f || pointer.y < 0f || pointer.x > Screen.width || pointer.y > Screen.height) return null;
+            if (UiPointerBlocker.IsBlocked(pointer)) return null;
 
             Ray ray = _camera.ScreenPointToRay(pointer);
             RaycastHit hit;

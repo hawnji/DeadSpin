@@ -1,4 +1,5 @@
 using DeadSpin.Runtime.Interaction;
+using DeadSpin.Runtime.Roulette;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -117,30 +118,31 @@ namespace DeadSpin.Runtime.Environment
             Box("Rail_Right", table, new Vector3(1.7f, TableHeight + 0.02f, 0f), new Vector3(0.1f, 0.06f, 1.7f), m.DarkWood);
             Box("Rail_Trim", table, new Vector3(0f, TableHeight + 0.055f, -0.8f), new Vector3(3.5f, 0.01f, 0.03f), m.Gold, ColliderMode.None);
 
-            // Wheel placeholder. Phase 2/3 replaces this with the procedural wheel.
-            Transform wheel = Group("Wheel_Placeholder", table);
-            wheel.localPosition = new Vector3(-1.12f, TableHeight, 0f);
-            Renderer bowl = Cylinder("Bowl", wheel, new Vector3(0f, 0.04f, 0f), new Vector3(0.95f, 0.04f, 0.95f), m.DarkWood);
-            Renderer rotor = Cylinder("Rotor", wheel, new Vector3(0f, 0.085f, 0f), new Vector3(0.68f, 0.012f, 0.68f), m.Gold);
-            Renderer cone = Cylinder("Cone", wheel, new Vector3(0f, 0.1f, 0f), new Vector3(0.3f, 0.015f, 0.3f), m.DarkWood);
-            Renderer turret = Cylinder("Turret", wheel, new Vector3(0f, 0.15f, 0f), new Vector3(0.05f, 0.05f, 0.05f), m.Gold);
-            var wheelInspect = wheel.gameObject.AddComponent<InspectableObject>();
-            wheelInspect.Configure("Inspect the wheel", bowl, rotor, cone, turret);
+            // The wheel: bowl, rotor, numbers and ball are generated at runtime from the wheel configuration.
+            var wheelObject = new GameObject("Wheel");
+            wheelObject.transform.SetParent(table, false);
+            wheelObject.transform.localPosition = new Vector3(-1.12f, TableHeight, 0f);
+            var wheel = wheelObject.AddComponent<WheelView>();
+            wheel.SetMaterials(m.PocketFloor, m.PocketRed, m.PocketBlack, m.PocketGreen, m.FretGold, m.WorldText, m.Gold, m.DarkWood);
+            Renderer ballRenderer = Sphere("Ball", wheelObject.transform, new Vector3(0f, 0.1f, 0.42f), Vector3.one * 0.022f, m.Ivory, ColliderMode.None);
+            var animator = wheelObject.AddComponent<BallSpinAnimator>();
+            animator.SetReferences(wheel, ballRenderer.transform);
+            var wheelInspect = wheelObject.AddComponent<InspectableObject>();
+            wheelInspect.Configure("Inspect the wheel");
             wheelInspect.SetText("The Wheel",
-                "Polished wood and gold. The pockets have no numbers yet, and the rotor is cold to the touch. " +
+                "Thirty-seven pockets, single zero, polished to a shine. The rotor never quite stops turning. " +
                 "Something underneath it is built to move.");
 
-            // Betting layout placeholder: 3 rows x 12 columns plus a zero column, outlined in gold.
-            Transform layout = Group("BettingLayout_Placeholder", table);
-            layout.localPosition = new Vector3(0.45f, TableHeight + 0.002f, 0.05f);
-            const float layoutWidth = 2.1f;
-            const float layoutDepth = 0.9f;
-            Renderer layoutSurface = Box("Surface", layout, Vector3.zero, new Vector3(layoutWidth, 0.004f, layoutDepth), m.FeltLayout);
-            BuildLayoutGrid(layout, m, layoutWidth, layoutDepth);
-            var layoutInspect = layout.gameObject.AddComponent<InspectableObject>();
-            layoutInspect.Configure("Inspect the betting layout", layoutSurface);
-            layoutInspect.SetText("The Betting Layout",
-                "Thirty-six boxes and a zero, ruled in gold leaf. The felt is worn smooth where others have leaned in to place their chips.");
+            // The betting layout, generated from the same layout definition the rules use.
+            var layoutObject = new GameObject("BettingLayout");
+            layoutObject.transform.SetParent(table, false);
+            layoutObject.transform.localPosition = new Vector3(0.5f, TableHeight, 0f);
+            var layout = layoutObject.AddComponent<BettingLayoutView>();
+            layout.SetMaterials(m.FeltLayout, m.PocketRed, m.PocketBlack, m.PocketGreen, m.Gold, m.WorldText, m.Gold,
+                new[] { m.ChipRed, m.ChipBlue, m.ChipGreen, m.ChipBlack, m.ChipPurple });
+
+            var controller = table.gameObject.AddComponent<RouletteTableController>();
+            controller.SetReferences(wheel, animator, layout);
 
             // Chip tray in front of the player's seat.
             Transform tray = Group("ChipTray", table);
@@ -149,7 +151,7 @@ namespace DeadSpin.Runtime.Environment
             Box("TrayLining", tray, new Vector3(0f, 0.012f, 0f), new Vector3(0.56f, 0.01f, 0.1f), m.RedVelvet, ColliderMode.None);
             var trayInspect = tray.gameObject.AddComponent<InspectableObject>();
             trayInspect.Configure("Inspect the chip tray", trayBox);
-            trayInspect.SetText("Your Chip Tray", "Empty for now. The house will issue your chips when the first round begins.");
+            trayInspect.SetText("Your Chip Tray", "Velvet-lined. Choose a chip with Q and E, click the felt to bet, Shift-click to take chips back.");
 
             // The player's side of the table: an empty stool edge in the foreground of the view.
             Transform seat = Group("PlayerStool", table);
@@ -158,31 +160,6 @@ namespace DeadSpin.Runtime.Environment
             Box("StoolLeg", seat, new Vector3(0f, 0.3f, 0f), new Vector3(0.08f, 0.6f, 0.08f), m.Gold);
 
             return table;
-        }
-
-        private static void BuildLayoutGrid(Transform layout, PrototypeMaterials m, float width, float depth)
-        {
-            const int columns = 12;
-            const int rows = 3;
-            const float line = 0.008f;
-            float zeroWidth = width / (columns + 1);
-            float left = -width * 0.5f;
-            float y = 0.004f;
-
-            for (int c = 0; c <= columns + 1; c++)
-            {
-                float x = left + c * zeroWidth;
-                Box("Line_V" + c, layout, new Vector3(x, y, 0f), new Vector3(line, 0.002f, depth), m.Gold, ColliderMode.None);
-            }
-            for (int r = 0; r <= rows; r++)
-            {
-                float z = -depth * 0.5f + r * (depth / rows);
-                // The zero column spans all rows, so inner horizontal lines start after it.
-                bool outer = r == 0 || r == rows;
-                float start = outer ? left : left + zeroWidth;
-                float span = width - (start - left);
-                Box("Line_H" + r, layout, new Vector3(start + span * 0.5f, y, z), new Vector3(span, 0.002f, line), m.Gold, ColliderMode.None);
-            }
         }
 
         private static void BuildGameMaster(Transform parent, PrototypeMaterials m)

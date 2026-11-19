@@ -32,6 +32,16 @@ The `noEngineReferences` flag on `DeadSpin.Core.asmdef` enforces this.
 | `GameStateMachine` | Core | Top-level modes with an explicit transition table. | none |
 | `SeededRandom` | Core | PCG32 RNG with unbiased ranges. | none |
 | `TableViewNavigator` | Core | Camera view selection, zoom and pan limits for the table view. | none |
+| `Pocket`, `WheelConfiguration`, `StandardWheels` | Core | The wheel as data: ordered pockets with number, colour, integer weight, active flag. Validation. European factory. | none |
+| `WheelOdds`, `OutcomeSelector` | Core | Exact odds from the configuration; one weighted seeded draw picks the winning pocket. | Wheel, IRandomSource |
+| `BetSelection`, `StandardLayout`, `BetSpot` | Core | What a bet covers; every legal spot on the felt with its position in layout units. | Wheel |
+| `PayoutPolicy` | Core | Payout ratio from true odds and house edge; profit rounded down. | Wheel, Betting |
+| `BetBook`, `TableGame`, `RoundResult` | Core | Placing/removing chips through the Ledger, min/max limits, spin protocol (pick result → animate → settle), history. | Run, Ledger, Wheel, Betting |
+| `WheelView`, `WheelMeshBuilder` | Runtime | Procedural bowl and rotor for any pocket count; numbers as depth-tested labels. | WheelConfiguration |
+| `BallSpinAnimator` | Runtime | Rotor and ball motion planned to land on a given pocket. | WheelView |
+| `BettingLayoutView`, `BetSpotTarget`, `ChipStackView` | Runtime | Felt layout from `StandardLayout`, hover coverage, click to bet, pooled chip stacks. | TableGame |
+| `RouletteTableController` | Runtime | Bridges `TableGame` to the views, camera and announcements. | everything above |
+| `TableHud`, `HudSkin` | Runtime | Round phase and countdown, Game Master line, chips, history, debt payments; shared IMGUI style. | RouletteTableController |
 | `GameSession` | Runtime | Owns the Run and state machine; the only code that changes mode; applies each mode to camera controls, interaction and time scale. Single instance. | Core, table rig |
 | `PlayerInputReader` | Runtime | Samples devices once per frame (Input System or legacy) into `PlayerInputFrame`. | none |
 | `TableCameraRig` | Runtime | Top-down camera: view presets in table space, smoothed pan, zoom, pitch and FOV, subtle cursor drift. | PlayerInputReader, TableViewNavigator |

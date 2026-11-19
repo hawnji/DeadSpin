@@ -4,8 +4,8 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
 
 | Phase | Goal | Status |
 |---|---|---|
-| 1. Foundation | Top-down table view where the player can look over and interact with the table | 🔨 code complete, awaiting in-Editor verification |
-| 2. Core roulette | Standard wheel, pocket generation, ball and spin, result resolution, betting layout, basic bets, payouts | ⏳ |
+| 1. Foundation | Top-down table view where the player can look over and interact with the table | ✅ verified in Editor |
+| 2. Core roulette | Standard wheel, pocket generation, ball and spin, result resolution, betting layout, basic bets, payouts | 🔨 code complete, awaiting in-Editor verification |
 | 3. Dynamic wheel | Procedural geometry, 12–100+ pockets, physical transformations, clone/remove/rearrange, rings, validation | ⏳ |
 | 4. Betting interaction | Physical chips, denominations, pickup and placement, stacking, timer, betting UI | ⏳ |
 | 5. Game Master and rule engine | House Authority, data-driven rules, interventions, dialogue, adaptive behaviour, conflicts | ⏳ |
@@ -20,19 +20,19 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
 | Requirement | Phase | Status |
 |---|---|---|
 | Table camera (replaces first-person movement) | 1 | ✅ code |
-| One interactive roulette table | 1 | ✅ code (placeholder) |
-| Working 36-pocket wheel | 2 | ⏳ |
+| One interactive roulette table | 1–2 | ✅ code |
+| Working 36/37-pocket wheel | 2 | ✅ code (37, single zero) |
 | Working 72-pocket wheel | 3 | ⏳ |
-| Procedural pocket generation | 2–3 | ⏳ |
+| Procedural pocket generation | 2–3 | ✅ code (any count; tested in Editor at 37) |
 | Physical wheel transformation | 3 | ⏳ |
-| Ball spinning and result resolution | 2 | ⏳ |
+| Ball spinning and result resolution | 2 | ✅ code |
 | Basic chip pickup and placement | 4 | ⏳ |
-| At least six traditional bet types | 2 | ⏳ |
-| Correct probability and payout calculations | 2–3 | ⏳ |
+| At least six traditional bet types | 2 | ✅ 13 types |
+| Correct probability and payout calculations | 2–3 | ✅ tested (simulation + exact) |
 | Starting money and debt | 1 | ✅ |
 | Basic Game Master dialogue | 5 | ⏳ |
 | Ten Game Master interventions | 5 | ⏳ |
-| Round progression | 1–2 | 🔨 flow and counter done; needs the spin |
+| Round progression | 1–2 | ✅ code |
 | Bankruptcy condition | 1 | ✅ |
 | Basic win condition | 1 | ✅ |
 
@@ -46,15 +46,17 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
   direction to a table-only game with a top-down camera. Walking removed; `TableCameraRig` and
   `TableViewNavigator` added; room relit around the table. 50 tests passing. Waiting on an
   in-Editor check of the new view.
+- 2026-11-18: Owner verified the top-down view in the Editor. Phase 2 built: wheel model,
+  odds, seeded outcome selection, all traditional bets, true-odds payouts, table game rules;
+  procedural wheel, ball animation, betting layout, chip stacks, round controls and HUD.
+  85 tests passing. Waiting on an in-Editor check.
 
-## Next: Phase 2 plan (draft)
+## Next: Phase 3 plan (draft)
 
-1. Core `Pocket` and `WheelConfiguration` (ordered pockets, colours, weights, duplicates) with
-   a validator, and a factory for the standard European 37-pocket layout.
-2. Core bet model: a bet is a set of covered displayed numbers or a predicate (red, odd, dozen);
-   payout derived from the configuration's probability with a configurable house edge.
-3. Seeded weighted outcome selection, with 1,000,000-spin simulation tests per configuration.
-4. Runtime wheel: procedural mesh from the configuration, rotor spin, ball animated along a
-   path to the pre-selected pocket.
-5. Betting layout zones on the table, a temporary click-to-bet input (physical chips arrive in
-   Phase 4), wired into `RoundFlow` so a complete round plays out with real money.
+1. Core wheel transforms as pure functions: add/remove/clone/shuffle/recolour pockets, resize,
+   each producing a new validated `WheelConfiguration` plus a diff.
+2. Generic wheel factories for 12, 18, 24, 36, 37, 48, 72 and 100 pockets, and a betting layout
+   that scales (or switches to a readable compact view) beyond 36 numbers.
+3. `WheelView` animates between configurations from the diff (pockets splitting, sliding,
+   emerging, diameter change), then rebuilds.
+4. Multiple rings and validation of incompatible modifiers.

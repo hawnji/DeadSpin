@@ -24,25 +24,12 @@ namespace DeadSpin.Runtime.UI
         private string _inspectionBody;
         private float _inspectionHideTime;
         private bool _showDebug;
-        private bool _stylesReady;
+        private HudSkin _skin;
+        private float _scale = 1f;
 
-        private GUIStyle _panel;
-        private GUIStyle _label;
-        private GUIStyle _value;
-        private GUIStyle _title;
-        private GUIStyle _prompt;
-        private GUIStyle _promptShadow;
-        private GUIStyle _tab;
-        private GUIStyle _tabActive;
-        private GUIStyle _button;
-        private GUIStyle _small;
-        private Texture2D _panelTexture;
-        private Texture2D _buttonTexture;
-        private Texture2D _buttonHoverTexture;
-
-        private static readonly Color Gold = new Color(0.86f, 0.70f, 0.38f);
-        private static readonly Color Bone = new Color(0.90f, 0.87f, 0.80f);
-        private static readonly Color Blood = new Color(0.80f, 0.22f, 0.20f);
+        private static readonly Color Gold = HudSkin.Gold;
+        private static readonly Color Bone = HudSkin.Bone;
+        private static readonly Color Blood = HudSkin.Blood;
 
         public float UiScale
         {
@@ -68,9 +55,7 @@ namespace DeadSpin.Runtime.UI
             if (session == null) return;
             if (session.Interactor != null) session.Interactor.InspectionReported -= OnInspection;
             session.ModeChanged -= OnModeChanged;
-            DestroyTexture(_panelTexture);
-            DestroyTexture(_buttonTexture);
-            DestroyTexture(_buttonHoverTexture);
+            if (_skin != null) _skin.Dispose();
         }
 
         private void Update()
@@ -96,9 +81,10 @@ namespace DeadSpin.Runtime.UI
         private void OnGUI()
         {
             if (session == null || session.Run == null) return;
-            EnsureStyles();
+            if (_skin == null) _skin = new HudSkin();
 
             float scale = Screen.height / ReferenceHeight * uiScale;
+            _scale = scale;
             Matrix4x4 previousMatrix = GUI.matrix;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float width = Screen.width / scale;
@@ -135,7 +121,8 @@ namespace DeadSpin.Runtime.UI
         private void DrawRunPanel(Run run)
         {
             var rect = new Rect(24f, 24f, 340f, 176f);
-            GUI.Box(rect, GUIContent.none, _panel);
+            UiPointerBlocker.Block(rect, _scale);
+            GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 20f, rect.y + 14f, rect.width - 40f, rect.height - 28f));
             Row("BALANCE", "$" + run.Ledger.Balance.ToString("N0"), Bone);
             Row("DEBT", "$" + run.Ledger.Debt.ToString("N0"), Blood);
@@ -151,9 +138,9 @@ namespace DeadSpin.Runtime.UI
         private void Row(string label, string value, Color valueColor)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, _label, GUILayout.Width(130f));
-            _value.normal.textColor = valueColor;
-            GUILayout.Label(value, _value);
+            GUILayout.Label(label, _skin.Label, GUILayout.Width(130f));
+            _skin.Value.normal.textColor = valueColor;
+            GUILayout.Label(value, _skin.Value);
             GUILayout.EndHorizontal();
         }
 
@@ -162,7 +149,7 @@ namespace DeadSpin.Runtime.UI
             if (session.Mode != GameMode.AtTable) return;
             string hint = "Click inspect   WASD / right-drag pan   Scroll zoom   1-4 / Tab views   Esc pause";
             if (Debug.isDebugBuild) hint += "   F1 dev panel";
-            GUI.Label(new Rect(24f, height - 44f, width - 48f, 28f), hint, _small);
+            GUI.Label(new Rect(24f, height - 44f, width - 48f, 28f), hint, _skin.Small);
         }
 
         /// <summary>Camera view tabs along the top centre; the active one is highlighted.</summary>
@@ -175,11 +162,12 @@ namespace DeadSpin.Runtime.UI
             const float tabHeight = 34f;
             float total = rig.ViewCount * tabWidth;
             float x = width * 0.5f - total * 0.5f;
+            UiPointerBlocker.Block(new Rect(x, 24f, total, tabHeight), _scale);
             for (int i = 0; i < rig.ViewCount; i++)
             {
                 bool active = i == rig.Navigator.CurrentView;
                 var rect = new Rect(x + i * tabWidth + 4f, 24f, tabWidth - 8f, tabHeight);
-                GUIStyle style = active ? _tabActive : _tab;
+                GUIStyle style = active ? _skin.TabActive : _skin.Tab;
                 if (GUI.Button(rect, (i + 1) + "  " + rig.GetViewName(i), style)) rig.Navigator.SelectView(i);
             }
         }
@@ -194,17 +182,17 @@ namespace DeadSpin.Runtime.UI
             float gx = pointer.x / scale;
             float gy = (Screen.height - pointer.y) / scale;
             var rect = new Rect(gx + 18f, gy + 18f, 420f, 32f);
-            GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), prompt, _promptShadow);
-            GUI.Label(rect, prompt, _prompt);
+            GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), prompt, _skin.PromptShadow);
+            GUI.Label(rect, prompt, _skin.Prompt);
         }
 
         private void DrawInspection(float width, float height)
         {
-            var rect = new Rect(width * 0.5f - 320f, height - 250f, 640f, 170f);
-            GUI.Box(rect, GUIContent.none, _panel);
+            var rect = new Rect(width * 0.5f - 320f, height - 400f, 640f, 170f);
+            GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 24f, rect.y + 16f, rect.width - 48f, rect.height - 32f));
-            GUILayout.Label(_inspectionTitle, _title);
-            GUILayout.Label(_inspectionBody, _small);
+            GUILayout.Label(_inspectionTitle, _skin.Title);
+            GUILayout.Label(_inspectionBody, _skin.Small);
             GUILayout.EndArea();
         }
 
@@ -212,15 +200,15 @@ namespace DeadSpin.Runtime.UI
         {
             DrawDim(width, height);
             var rect = new Rect(width * 0.5f - 200f, height * 0.5f - 150f, 400f, 300f);
-            GUI.Box(rect, GUIContent.none, _panel);
+            GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 30f, rect.y + 24f, rect.width - 60f, rect.height - 48f));
-            GUILayout.Label("PAUSED", _title);
+            GUILayout.Label("PAUSED", _skin.Title);
             GUILayout.Space(16f);
-            if (GUILayout.Button("Resume", _button, GUILayout.Height(48f))) session.TryResume();
+            if (GUILayout.Button("Resume", _skin.Button, GUILayout.Height(48f))) session.TryResume();
             GUILayout.Space(8f);
-            if (GUILayout.Button("Restart run", _button, GUILayout.Height(48f))) session.RestartRun();
+            if (GUILayout.Button("Restart run", _skin.Button, GUILayout.Height(48f))) session.RestartRun();
             GUILayout.Space(8f);
-            if (GUILayout.Button("Quit", _button, GUILayout.Height(48f))) session.QuitGame();
+            if (GUILayout.Button("Quit", _skin.Button, GUILayout.Height(48f))) session.QuitGame();
             GUILayout.EndArea();
         }
 
@@ -250,16 +238,16 @@ namespace DeadSpin.Runtime.UI
             }
 
             var rect = new Rect(width * 0.5f - 300f, height * 0.5f - 170f, 600f, 340f);
-            GUI.Box(rect, GUIContent.none, _panel);
+            GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 30f, rect.y + 24f, rect.width - 60f, rect.height - 48f));
-            GUILayout.Label(heading, _title);
-            GUILayout.Label(body, _small);
+            GUILayout.Label(heading, _skin.Title);
+            GUILayout.Label(body, _skin.Small);
             GUILayout.Space(10f);
-            GUILayout.Label("Rounds played: " + run.RoundsPlayed + "    Won: $" + run.Ledger.TotalWinnings.ToString("N0") + "    Lost: $" + run.Ledger.TotalLosses.ToString("N0"), _small);
+            GUILayout.Label("Rounds played: " + run.RoundsPlayed + "    Won: $" + run.Ledger.TotalWinnings.ToString("N0") + "    Lost: $" + run.Ledger.TotalLosses.ToString("N0"), _skin.Small);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("New run", _button, GUILayout.Height(48f))) session.RestartRun();
+            if (GUILayout.Button("New run", _skin.Button, GUILayout.Height(48f))) session.RestartRun();
             GUILayout.Space(8f);
-            if (GUILayout.Button("Quit", _button, GUILayout.Height(48f))) session.QuitGame();
+            if (GUILayout.Button("Quit", _skin.Button, GUILayout.Height(48f))) session.QuitGame();
             GUILayout.EndArea();
         }
 
@@ -269,37 +257,25 @@ namespace DeadSpin.Runtime.UI
         /// </summary>
         private void DrawDebugPanel(Run run, float width)
         {
-            var rect = new Rect(width - 344f, 24f, 320f, 420f);
-            GUI.Box(rect, GUIContent.none, _panel);
+            var rect = new Rect(width - 344f, 80f, 320f, 360f);
+            UiPointerBlocker.Block(rect, _scale);
+            GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 16f, rect.y + 12f, rect.width - 32f, rect.height - 24f));
-            GUILayout.Label("DEV PANEL", _title);
-            GUILayout.Label("Mode: " + session.Mode + "   Seed: " + run.Random.Seed, _small);
+            GUILayout.Label("DEV PANEL", _skin.Title);
+            GUILayout.Label("Mode: " + session.Mode + "   Seed: " + run.Random.Seed, _skin.Small);
             GUI.enabled = !run.IsOver;
-            if (GUILayout.Button("+ $1,000 reward", _button)) run.Ledger.Credit(1000, TransactionKind.Reward, "Dev panel");
-            if (GUILayout.Button("- $1,000 penalty", _button)) run.Ledger.ForceDebit(1000, TransactionKind.Penalty, "Dev panel");
-            if (GUILayout.Button("Pay $10,000 of debt", _button))
+            if (GUILayout.Button("+ $1,000 reward", _skin.Button)) run.Ledger.Credit(1000, TransactionKind.Reward, "Dev panel");
+            if (GUILayout.Button("- $1,000 penalty", _skin.Button)) run.Ledger.ForceDebit(1000, TransactionKind.Penalty, "Dev panel");
+            if (GUILayout.Button("Pay $10,000 of debt", _skin.Button))
             {
                 if (run.Ledger.PayDebt(10000, "Dev panel") == 0) Debug.Log("[Dev] Nothing paid: no balance or no debt.");
             }
-            if (GUILayout.Button("Forgive all debt", _button) && run.Ledger.Debt > 0) run.Ledger.ForgiveDebt(run.Ledger.Debt, "Dev panel");
-            if (GUILayout.Button("Play an empty round", _button)) PlayEmptyRound(run);
+            if (GUILayout.Button("Forgive all debt", _skin.Button) && run.Ledger.Debt > 0) run.Ledger.ForgiveDebt(run.Ledger.Debt, "Dev panel");
             GUI.enabled = true;
             GUILayout.Space(6f);
-            if (GUILayout.Button("Restart run", _button)) session.RestartRun();
-            GUILayout.Label("History: " + run.Ledger.History.Count + " transactions", _small);
+            if (GUILayout.Button("Restart run", _skin.Button)) session.RestartRun();
+            GUILayout.Label("History: " + run.Ledger.History.Count + " transactions", _skin.Small);
             GUILayout.EndArea();
-        }
-
-        /// <summary>Runs one round through every phase with no bets, as the spin system will in Phase 2.</summary>
-        private static void PlayEmptyRound(Run run)
-        {
-            if (!run.Round.InProgress && !run.TryBeginRound()) return;
-            if (run.Round.Phase == RoundPhase.Announcing) run.Round.Tick(run.Round.TimeRemaining);
-            run.Round.TryCloseBettingEarly();
-            run.Round.NotifySpinStarted();
-            run.Round.NotifySpinFinished();
-            run.Round.NotifyResolutionFinished();
-            if (run.Round.Phase == RoundPhase.Summary) run.Round.Tick(run.Round.TimeRemaining);
         }
 
         private void DrawDim(float width, float height)
@@ -308,68 +284,6 @@ namespace DeadSpin.Runtime.UI
             GUI.color = new Color(0f, 0f, 0f, 0.6f);
             GUI.DrawTexture(new Rect(0f, 0f, width, height), Texture2D.whiteTexture);
             GUI.color = previous;
-        }
-
-        private void EnsureStyles()
-        {
-            if (_stylesReady) return;
-            _stylesReady = true;
-
-            _panelTexture = SolidTexture(new Color(0.05f, 0.03f, 0.03f, 0.82f));
-            _buttonTexture = SolidTexture(new Color(0.22f, 0.07f, 0.07f, 0.95f));
-            _buttonHoverTexture = SolidTexture(new Color(0.38f, 0.12f, 0.10f, 0.95f));
-
-            _panel = new GUIStyle(GUI.skin.box);
-            _panel.normal.background = _panelTexture;
-            _panel.border = new RectOffset(0, 0, 0, 0);
-
-            _label = new GUIStyle(GUI.skin.label) { fontSize = 18, fontStyle = FontStyle.Bold };
-            _label.normal.textColor = Gold;
-
-            _value = new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleRight };
-            _value.normal.textColor = Bone;
-
-            _title = new GUIStyle(GUI.skin.label) { fontSize = 30, fontStyle = FontStyle.Bold, wordWrap = true };
-            _title.normal.textColor = Gold;
-
-            _small = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true };
-            _small.normal.textColor = Bone;
-
-            _prompt = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.UpperLeft, fontStyle = FontStyle.Bold };
-            _prompt.normal.textColor = Gold;
-            _promptShadow = new GUIStyle(_prompt);
-            _promptShadow.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
-
-            _tab = new GUIStyle(GUI.skin.button) { fontSize = 17 };
-            _tab.normal.background = _panelTexture;
-            _tab.hover.background = _buttonHoverTexture;
-            _tab.active.background = _buttonHoverTexture;
-            _tab.normal.textColor = new Color(Bone.r, Bone.g, Bone.b, 0.7f);
-            _tab.hover.textColor = Gold;
-            _tabActive = new GUIStyle(_tab) { fontStyle = FontStyle.Bold };
-            _tabActive.normal.background = _buttonTexture;
-            _tabActive.normal.textColor = Gold;
-
-            _button = new GUIStyle(GUI.skin.button) { fontSize = 20, fontStyle = FontStyle.Bold };
-            _button.normal.background = _buttonTexture;
-            _button.hover.background = _buttonHoverTexture;
-            _button.active.background = _buttonHoverTexture;
-            _button.normal.textColor = Bone;
-            _button.hover.textColor = Gold;
-            _button.active.textColor = Gold;
-        }
-
-        private static Texture2D SolidTexture(Color color)
-        {
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
-            texture.SetPixel(0, 0, color);
-            texture.Apply();
-            return texture;
-        }
-
-        private static void DestroyTexture(Texture2D texture)
-        {
-            if (texture != null) Destroy(texture);
         }
     }
 }

@@ -16,6 +16,9 @@ namespace DeadSpin.Core.GameState
         public int TotalRounds = 18;
         public long MinimumBet = 10;
 
+        /// <summary>Largest total allowed on a single betting spot.</summary>
+        public long MaximumBet = 10000;
+
         /// <summary>Seconds the Game Master spends announcing rules before betting opens.</summary>
         public float AnnouncementSeconds = 3f;
 
@@ -46,6 +49,7 @@ namespace DeadSpin.Core.GameState
             if (StartingDebt < 0) errors.Add("Starting debt cannot be negative.");
             if (TotalRounds <= 0) errors.Add("Total rounds must be at least 1.");
             if (MinimumBet <= 0) errors.Add("Minimum bet must be positive.");
+            if (MaximumBet < MinimumBet) errors.Add("Maximum bet cannot be below the minimum bet.");
             if (MinimumBet > StartingBalance) errors.Add("Minimum bet cannot exceed the starting balance, or the run is lost before it starts.");
             if (AnnouncementSeconds < 0f) errors.Add("Announcement time cannot be negative.");
             if (BettingSeconds <= 0f) errors.Add("Betting time must be positive.");

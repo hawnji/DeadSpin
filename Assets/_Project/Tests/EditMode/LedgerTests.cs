@@ -31,7 +31,18 @@ namespace DeadSpin.Tests
             var ledger = new Ledger(100, 0);
             Assert.IsTrue(ledger.TryDebit(100, TransactionKind.WagerPlaced, "all in"));
             Assert.AreEqual(0, ledger.Balance);
-            Assert.AreEqual(100, ledger.TotalLosses);
+            Assert.AreEqual(0, ledger.TotalLosses, "A wager is not a loss until it is resolved.");
+        }
+
+        [Test]
+        public void RecordWagerLost_CountsLossWithoutMovingMoney()
+        {
+            var ledger = new Ledger(100, 0);
+            ledger.TryDebit(40, TransactionKind.WagerPlaced, "red");
+            ledger.RecordWagerLost(40, "red on 17");
+            Assert.AreEqual(60, ledger.Balance);
+            Assert.AreEqual(40, ledger.TotalLosses);
+            Assert.AreEqual(TransactionKind.WagerLost, ledger.History[ledger.History.Count - 1].Kind);
         }
 
         [Test]

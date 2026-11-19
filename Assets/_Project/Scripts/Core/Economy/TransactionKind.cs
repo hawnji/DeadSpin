@@ -6,6 +6,10 @@ namespace DeadSpin.Core.Economy
         StartingFunds,
         WagerPlaced,
         WagerRefunded,
+        /// <summary>A winning wager's stake coming back to the player.</summary>
+        WagerReturned,
+        /// <summary>Record-only entry (no balance change): a resolved wager that lost.</summary>
+        WagerLost,
         Winnings,
         Penalty,
         Reward,

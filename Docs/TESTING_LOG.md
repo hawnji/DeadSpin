@@ -65,3 +65,47 @@ input branch and no-backend branch). The Input System branch was not compiled ou
    screens as before.
 9. Test Runner shows 50 EditMode tests passing.
 10. 60 FPS or better in the Game view on a midrange PC.
+
+### In-Editor result (owner)
+
+The owner verified the top-down table view in Unity 6000.6.9f1: working.
+
+## 2026-11-18: Phase 2, core roulette
+
+### Automated: 85 passed, 0 failed (headless)
+
+| Suite | Tests | What it proves |
+|---|---|---|
+| `WheelTests` | 9 | European layout (order, colours alternate, 18/18/1); validation catches dead, zero-only, duplicate-id and red-zero wheels; clones count in odds (13 in 4 of 72 pockets = 4/72); weights and closed pockets; seeded selection reproducible; closed/zero-weight pockets never drawn; **740,000-spin** chi-squared on the European wheel and **400,000-spin** chi-squared on a weighted 12-pocket wheel with a clone |
+| `BettingTests` | 13 | Every spot exists (37 straights, 60 splits, 12 streets, 22 corners, 11 six lines, outside bets); spots stay on the felt; only touching numbers form splits/corners; shape validation; chips on the same spot stack; outside coverage; zero loses all outside bets; classic payouts reproduced exactly; every spot returns 36/37 per dollar; payouts drop when 13 is cloned (8.73 to 1); profit rounds down; unwinnable bets pay nothing |
+| `TableGameTests` | 12 | Money moves to the table; min, max, funds, legality and closed-betting checks; minimum applies to the spot total; removal and clear refunds; bets lock at close; result hidden until the ball settles; 37 straights settle to exactly one win; seeded runs repeat; all-in loss is bankruptcy after the spin; wheel swaps only between rounds; **20,000-round** red-bet simulation returns 36/37 within tolerance |
+| `LedgerTests` | +1 | Wagers are losses only once resolved |
+
+### Static
+
+Runtime and Editor scripts type-check with no errors (legacy-input and no-backend branches).
+Not compiled here: the Input System branch and `Shaders/WorldText.shader`.
+
+### Not yet verified: in-Editor checklist (Unity 6000.6.9f1)
+
+1. Run **Dead Spin > Build Prototype Scene** again. No errors. 22 materials in `Materials/Prototype`.
+2. Play: the wheel shows 37 coloured pockets with gold frets and readable numbers; the rotor
+   turns slowly. The felt shows 0–36 in red/black boxes, 2 to 1, dozens and the even-money row.
+   Numbers are hidden behind objects that cover them (they should not draw through things).
+3. Hover a number: it glows and a prompt reads "Straight 17 pays 35 to 1 (2.7%)". Hover the line
+   between 17 and 20: a small gold marker appears and both boxes glow (split, 17 to 1). Check a
+   corner, a street (near edge of a column) and a six line.
+4. Space starts round 1: Game Master line, then PLACE YOUR BETS with a countdown, camera moves
+   to the layout.
+5. Click to place $25 chips; Q/E change the chip; Shift-click takes chips back; Backspace clears.
+   Balance and "On the table" update. Bets below $10 or over $10,000 per spot are refused with a
+   message.
+6. Space (or the timer) closes betting: the camera moves to the wheel, the ball circles, drops,
+   bounces and settles. The number is shown only after it settles, and it is the pocket the ball
+   is in.
+7. Winnings are correct (e.g. $10 straight win returns $360; $10 on red returns $20).
+8. The camera returns, the number appears under LAST NUMBERS, the round counter advances.
+9. Between rounds, "Pay the house" buttons reduce the debt. Paying it off shows FREEDOM.
+10. Losing everything shows THE HOUSE ALWAYS WINS after the spin; 18 rounds with debt shows TIME IS UP.
+11. Pause during a spin freezes the ball; resuming continues and settles correctly.
+12. Test Runner: 85 EditMode tests pass.

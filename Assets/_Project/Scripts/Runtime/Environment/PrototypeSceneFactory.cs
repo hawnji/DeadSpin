@@ -32,6 +32,7 @@ namespace DeadSpin.Runtime.Environment
             var sessionObject = new GameObject("GameSession");
             result.Session = sessionObject.AddComponent<GameSession>();
             sessionObject.AddComponent<PrototypeHud>();
+            sessionObject.AddComponent<TableHud>();
 
             return result;
         }
