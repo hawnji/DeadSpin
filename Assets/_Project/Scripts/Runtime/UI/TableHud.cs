@@ -22,6 +22,7 @@ namespace DeadSpin.Runtime.UI
         private HudSkin _skin;
         private RoundResult _shownResult;
         private float _resultTime = -100f;
+        private float _scale = 1f;
 
         private void Start()
         {
@@ -55,6 +56,7 @@ namespace DeadSpin.Runtime.UI
             if (_skin == null) _skin = new HudSkin();
 
             float scale = HudSkin.Scale(uiScale);
+            _scale = scale;
             Matrix4x4 previous = GUI.matrix;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float width = Screen.width / scale;
@@ -128,6 +130,7 @@ namespace DeadSpin.Runtime.UI
         private void DrawChipPanel(TableGame game, float height)
         {
             var rect = new Rect(24f, height - 250f, 360f, 190f);
+            UiPointerBlocker.Block(rect, _scale);
             GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 16f, rect.y + 10f, rect.width - 32f, rect.height - 20f));
 
@@ -184,6 +187,7 @@ namespace DeadSpin.Runtime.UI
         {
             if (game.Run.IsOver || game.Run.Ledger.Debt <= 0) return;
             var rect = new Rect(width - 344f, 460f, 320f, 120f);
+            UiPointerBlocker.Block(rect, _scale);
             GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 16f, rect.y + 10f, rect.width - 32f, rect.height - 20f));
             GUILayout.Label("PAY THE HOUSE", _skin.Label);

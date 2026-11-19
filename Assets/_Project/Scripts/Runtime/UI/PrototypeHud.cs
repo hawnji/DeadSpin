@@ -25,6 +25,7 @@ namespace DeadSpin.Runtime.UI
         private float _inspectionHideTime;
         private bool _showDebug;
         private HudSkin _skin;
+        private float _scale = 1f;
 
         private static readonly Color Gold = HudSkin.Gold;
         private static readonly Color Bone = HudSkin.Bone;
@@ -83,6 +84,7 @@ namespace DeadSpin.Runtime.UI
             if (_skin == null) _skin = new HudSkin();
 
             float scale = Screen.height / ReferenceHeight * uiScale;
+            _scale = scale;
             Matrix4x4 previousMatrix = GUI.matrix;
             GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
             float width = Screen.width / scale;
@@ -119,6 +121,7 @@ namespace DeadSpin.Runtime.UI
         private void DrawRunPanel(Run run)
         {
             var rect = new Rect(24f, 24f, 340f, 176f);
+            UiPointerBlocker.Block(rect, _scale);
             GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 20f, rect.y + 14f, rect.width - 40f, rect.height - 28f));
             Row("BALANCE", "$" + run.Ledger.Balance.ToString("N0"), Bone);
@@ -159,6 +162,7 @@ namespace DeadSpin.Runtime.UI
             const float tabHeight = 34f;
             float total = rig.ViewCount * tabWidth;
             float x = width * 0.5f - total * 0.5f;
+            UiPointerBlocker.Block(new Rect(x, 24f, total, tabHeight), _scale);
             for (int i = 0; i < rig.ViewCount; i++)
             {
                 bool active = i == rig.Navigator.CurrentView;
@@ -254,6 +258,7 @@ namespace DeadSpin.Runtime.UI
         private void DrawDebugPanel(Run run, float width)
         {
             var rect = new Rect(width - 344f, 80f, 320f, 360f);
+            UiPointerBlocker.Block(rect, _scale);
             GUI.Box(rect, GUIContent.none, _skin.Panel);
             GUILayout.BeginArea(new Rect(rect.x + 16f, rect.y + 12f, rect.width - 32f, rect.height - 24f));
             GUILayout.Label("DEV PANEL", _skin.Title);

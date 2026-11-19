@@ -37,4 +37,3 @@ is the source of truth for scope; this list records decisions and extras found a
 ## Later / nice to have
 - Controller support (input already isolated in `PlayerInputReader`).
 - Key rebinding and camera pan/zoom speed in an options menu.
-- Clicks on HUD buttons should not also reach objects behind them on the table.
