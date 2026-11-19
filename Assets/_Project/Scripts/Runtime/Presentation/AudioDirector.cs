@@ -15,8 +15,8 @@ using UnityEngine;
 namespace DeadSpin.Runtime.Presentation
 {
     /// <summary>
-    /// Every sound in the prototype is synthesised at startup, so the game needs no audio assets:
-    /// an ambient drone that darkens with each stage, the ball rolling and clicking into pockets,
+    /// Every sound in the prototype is synthesised at startup, so the game needs no audio assets
+    /// (there is deliberately no background ambience): the ball rolling and clicking into pockets,
     /// chips, wins and losses, wheel transformations, shakes and a heartbeat when time or money
     /// runs low. Replace any cue by dropping a clip into a Resources/Audio folder with the cue's
     /// name (for example Resources/Audio/chip). The Game Master's lines play recorded voice clips
@@ -30,12 +30,10 @@ namespace DeadSpin.Runtime.Presentation
         [SerializeField] private RouletteTableController table;
         [SerializeField] private BallSpinAnimator ball;
         [Range(0f, 1f)] [SerializeField] private float effectsVolume = 0.8f;
-        [Range(0f, 1f)] [SerializeField] private float ambienceVolume = 0.35f;
         [Range(0f, 1f)] [SerializeField] private float voiceVolume = 1f;
 
         private readonly Dictionary<string, AudioClip> _clips = new Dictionary<string, AudioClip>();
         private AudioSource _effects;
-        private AudioSource _ambience;
         private AudioSource _roll;
         private AudioSource _voice;
         private AudioSource _heart;
@@ -47,15 +45,11 @@ namespace DeadSpin.Runtime.Presentation
             if (ball == null) ball = FindAnyObjectByType<BallSpinAnimator>();
 
             _effects = NewSource("Effects", false);
-            _ambience = NewSource("Ambience", true);
             _roll = NewSource("BallRoll", true);
             _voice = NewSource("Voice", false);
             _heart = NewSource("Heartbeat", true);
 
             Build();
-            _ambience.clip = Clip("ambience");
-            _ambience.volume = ambienceVolume;
-            _ambience.Play();
             _roll.clip = Clip("roll");
             _heart.clip = Clip("heartbeat");
 
@@ -110,9 +104,6 @@ namespace DeadSpin.Runtime.Presentation
         {
             CasinoRun casino = session != null ? session.Casino : null;
             if (casino == null) { _heart.volume = 0f; return; }
-
-            // The drone drops in pitch as the night goes on.
-            _ambience.pitch = Mathf.Lerp(_ambience.pitch, 1f - (casino.Stage - 1) * 0.06f - (casino.CurrentFinalPhase != Core.Progression.FinalPhase.None ? 0.1f : 0f), Time.deltaTime);
 
             bool lowTime = casino.Run.Round.Phase == RoundPhase.Betting && !casino.Table.Modifiers.SilentSpin && casino.Run.Round.TimeRemaining < 6f;
             bool danger = BankruptcyForecast.Worst(casino.Warnings()) >= WarningLevel.Danger;
@@ -240,12 +231,6 @@ namespace DeadSpin.Runtime.Presentation
                 double voice = Math.Sin(t * 2 * Math.PI * 110) * 0.5 + Math.Sin(t * 2 * Math.PI * 220) * 0.25 + Math.Sin(t * 2 * Math.PI * 330) * 0.1;
                 return voice * syllable * Env(t, 0.05f, 1.4f) * 0.5;
             });
-            Add("ambience", 8f, (t, i) =>
-            {
-                double drone = Math.Sin(t * 2 * Math.PI * 55) * 0.25 + Math.Sin(t * 2 * Math.PI * 82.5) * 0.15 + Math.Sin(t * 2 * Math.PI * 110.25) * 0.08;
-                double swell = 0.7 + 0.3 * Math.Sin(t * 2 * Math.PI / 8.0);
-                return drone * swell + Noise(random) * 0.02;
-            }, true);
 
             // Recorded overrides.
             foreach (string cue in new List<string>(_clips.Keys))
