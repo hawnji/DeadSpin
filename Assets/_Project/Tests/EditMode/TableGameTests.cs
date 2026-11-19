@@ -114,7 +114,7 @@ namespace DeadSpin.Tests
             TableGame game = OpenBetting();
             game.PlaceBet(BetSelection.Outside(BetType.Red), 10);
             game.TryCloseBetting();
-            int target = game.StartSpin();
+            int target = game.StartSpin().PocketIndices[0];
             Assert.AreEqual(RoundPhase.Spinning, game.Run.Round.Phase);
             Assert.IsNull(game.LastResult, "Nothing is revealed while the ball is moving.");
             Assert.Throws<System.InvalidOperationException>(() => game.StartSpin());
@@ -178,14 +178,20 @@ namespace DeadSpin.Tests
         }
 
         [Test]
-        public void TrySetWheel_OnlyBetweenRounds()
+        public void WheelChange_DuringBetting_RefundsBetsThatCanNoLongerWin()
         {
             TableGame game = OpenBetting();
-            game.PlaceBet(BetSelection.Straight(1), 10);
-            WheelConfiguration replacement = StandardWheels.European();
-            Assert.IsFalse(game.TrySetWheel(replacement), "Not while chips are down.");
-            game.ClearBets();
-            Assert.IsTrue(game.TrySetWheel(replacement));
+            game.PlaceBet(BetSelection.Straight(17), 50);
+            game.PlaceBet(BetSelection.Outside(BetType.Red), 40);
+            WheelChange change = WheelTransforms.RemoveNumber(game.Wheel, 17);
+            Assert.IsTrue(game.ApplyWheelChange(change), "Live transformations are allowed while betting.");
+            Assert.AreEqual(0, game.Bets.AmountOn(BetSelection.Straight(17)), "The bet on the removed number is refunded.");
+            Assert.AreEqual(40, game.Bets.Total);
+            Assert.AreEqual(2500 - 40, game.Run.Ledger.Balance);
+
+            game.TryCloseBetting();
+            game.StartSpin();
+            Assert.IsFalse(game.TrySetWheel(StandardWheels.European()), "Never while the ball is moving.");
         }
 
         [Test]

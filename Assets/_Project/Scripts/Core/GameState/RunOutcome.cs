@@ -12,6 +12,12 @@ namespace DeadSpin.Core.GameState
         /// <summary>Balance can no longer cover the minimum bet and no money is on the table.</summary>
         Bankrupt,
         /// <summary>All rounds were played and debt remains.</summary>
-        DeadlineMissed
+        DeadlineMissed,
+        /// <summary>Debt paid and the Game Master beaten at his own table: the player takes over the casino.</summary>
+        NewOwner,
+        /// <summary>The player accepted the Game Master's final offer and now works for the house.</summary>
+        TheDeal,
+        /// <summary>The player proved the house broke its own rules and walked out without paying in full.</summary>
+        Loophole
     }
 }

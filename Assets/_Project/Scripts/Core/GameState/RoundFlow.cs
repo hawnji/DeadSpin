@@ -20,6 +20,14 @@ namespace DeadSpin.Core.GameState
         /// <summary>Extra seconds granted to the current betting window (abilities, hourglass pockets).</summary>
         public float BonusBettingSeconds { get; private set; }
 
+        /// <summary>Added to the configured betting time for the next betting window (rules). The window never drops below <see cref="MinimumBettingSeconds"/>.</summary>
+        public float BettingSecondsDelta { get; set; }
+
+        public const float MinimumBettingSeconds = 8f;
+
+        /// <summary>Length the next (or current) betting window starts with.</summary>
+        public float BettingWindowSeconds => Math.Max(MinimumBettingSeconds, _config.BettingSeconds + BettingSecondsDelta);
+
         public bool IsBettingOpen => Phase == RoundPhase.Betting;
         public bool InProgress => Phase != RoundPhase.Idle;
 
@@ -46,7 +54,7 @@ namespace DeadSpin.Core.GameState
             }
             else
             {
-                SetPhase(RoundPhase.Betting, _config.BettingSeconds);
+                SetPhase(RoundPhase.Betting, BettingWindowSeconds);
             }
             return true;
         }
@@ -85,6 +93,23 @@ namespace DeadSpin.Core.GameState
         public bool TryCloseBettingEarly()
         {
             if (Phase != RoundPhase.Betting) return false;
+            SetPhase(RoundPhase.BettingClosed, 0f);
+            return true;
+        }
+
+        /// <summary>Shortens or lengthens the current betting window (hourglass, rules). Never below one second.</summary>
+        public bool TryAdjustBettingTime(float seconds)
+        {
+            if (Phase != RoundPhase.Betting) return false;
+            TimeRemaining = Math.Max(1f, TimeRemaining + seconds);
+            if (seconds > 0f) BonusBettingSeconds += seconds;
+            return true;
+        }
+
+        /// <summary>The Double Spin: goes from resolution straight back to "betting closed" for another spin.</summary>
+        public bool RestartSpin()
+        {
+            if (Phase != RoundPhase.Resolving) return false;
             SetPhase(RoundPhase.BettingClosed, 0f);
             return true;
         }
@@ -134,7 +159,7 @@ namespace DeadSpin.Core.GameState
             switch (Phase)
             {
                 case RoundPhase.Announcing:
-                    SetPhase(RoundPhase.Betting, _config.BettingSeconds);
+                    SetPhase(RoundPhase.Betting, BettingWindowSeconds);
                     break;
                 case RoundPhase.Betting:
                     SetPhase(RoundPhase.BettingClosed, 0f);
