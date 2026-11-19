@@ -1,6 +1,7 @@
 # Dead Spin
 
-A first-person 3D roulette survival game for PC, built in Unity 6 with C#. You wake in an
+A 3D roulette survival game for PC, built in Unity 6 with C#, played from a top-down view of
+the roulette table. You wake in an
 underground casino owing $50,000 to a Game Master who can rewrite the wheel, the table and the
 rules. Win enough to buy your freedom before the rounds run out.
 
@@ -43,15 +44,15 @@ The repository holds the game's code and docs. Unity generates the rest (`Packag
 If Unity asks to enable the new input backends, choose **Yes**. The code also works with the
 legacy Input Manager or with "Both".
 
-## Controls (Phase 1)
+## Controls
 
-| Action | Key |
+| Action | Input |
 |---|---|
-| Move / sprint | WASD / Left Shift |
-| Look | Mouse |
-| Interact / inspect | E or left click |
-| Stand up from the table | Esc or Tab |
-| Pause | Esc (while walking) |
+| Inspect / select | Left click |
+| Pan across the table | WASD or arrow keys, or drag with right / middle mouse |
+| Zoom | Scroll wheel |
+| Switch view (table, betting layout, wheel, Game Master) | 1–4, Tab, or the tabs at the top |
+| Pause | Esc |
 | Developer panel | F1 (Editor and development builds) |
 
 ## Tests

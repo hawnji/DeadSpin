@@ -33,8 +33,8 @@ Assets/_Project/
     Runtime/     DeadSpin.Runtime   MonoBehaviours: presentation and input only.
       Bootstrap/   GameSession (owns the Run and the game mode)
       Config/      ScriptableObject configs
-      Player/      input, movement, look, camera focus
-      Interaction/ interactor, interactables, table seat
+      Player/      input, top-down table camera
+      Interaction/ interactor, interactables
       Environment/ prototype room builder, materials, scene factory
       UI/          HUD
     Editor/      DeadSpin.Editor    Menu tools (scene builder, later wheel previewers)
@@ -78,15 +78,19 @@ prototype (section 23), which is reached at the end of Phase 5 plus the minimum 
 | Run state | `RunConfig`, `Ledger`, `Run`, `RunOutcomeEvaluator` | $2,500 / $50,000 / 18 rounds, bankruptcy, freedom, deadline |
 | Flow | `GameStateMachine`, `RoundFlow` | Explicit modes (explore, table, pause, ended) and timed round phases |
 | Determinism | `SeededRandom` | Reproducible randomness for all later systems |
-| Player | `PlayerInputReader`, `FirstPersonController`, `PlayerLook`, `CameraFocus` | Smooth first-person movement and camera |
-| Interaction | `Interactor`, `Interactable`, `InspectableObject`, `RouletteTableStation` | Look at, highlight, inspect and sit at the table |
+| Camera | `PlayerInputReader`, `TableCameraRig`, `TableViewNavigator` | Top-down table camera with four views, pan and zoom |
+| Interaction | `Interactor`, `Interactable`, `InspectableObject` | Point, highlight and inspect with the mouse |
 | World | `PrototypeCasinoBuilder`, `PrototypeMaterials`, `PrototypeSceneFactory`, `PrototypeSceneMenu` | Greybox casino generated and saved by a menu command |
 | HUD | `PrototypeHud` | Money, debt, round, prompts, inspection, pause, end screen, dev panel |
 | Tests | 41 EditMode tests | Ledger, outcome rules, state machine, round flow, RNG |
 
-**Deliverable:** walk around a dim casino, approach the roulette table, sit down (the camera
-glides to a table view), point at and inspect the wheel, layout, chip tray, doors and the Game
-Master, stand up, pause, and see the run state on the HUD.
+**Deliverable:** seated at the roulette table from a top-down camera, switch between the table,
+betting layout, wheel and Game Master views, pan and zoom, point at and inspect the wheel,
+layout, chip tray and the Game Master, pause, and see the run state on the HUD.
+
+**Direction change (2026-11-18):** after playing the first build, the owner chose a table-only
+game with a top-down camera instead of first-person walking. The walking controller was
+removed; other casino rooms will be menus or short transitions.
 
 ## 6. Critical technical risks
 

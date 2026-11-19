@@ -5,30 +5,20 @@ using UnityEngine;
 namespace DeadSpin.Runtime.Interaction
 {
     /// <summary>
-    /// Finds the interactable the player is pointing at and triggers it.
-    /// Crosshair mode casts from the screen centre (free walking); Pointer mode casts through the
-    /// mouse cursor (seated at the table, where the cursor is visible).
+    /// Finds the interactable under the mouse cursor and uses it on left click. The table is
+    /// viewed from above, so all interaction is cursor-based. Ignored while the player drags to pan.
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public sealed class Interactor : MonoBehaviour
     {
-        public enum AimMode
-        {
-            Crosshair,
-            Pointer
-        }
-
         [SerializeField] private PlayerInputReader input;
-        [Min(0.1f)] [SerializeField] private float crosshairRange = 2.6f;
-        [Min(0.1f)] [SerializeField] private float pointerRange = 4f;
+        [Min(0.5f)] [SerializeField] private float range = 12f;
         [SerializeField] private LayerMask interactionMask = ~0;
 
         private Camera _camera;
         private IInteractable _focused;
 
-        public AimMode Mode { get; set; } = AimMode.Crosshair;
-
-        /// <summary>The object currently under the crosshair/cursor that can be used, or null.</summary>
+        /// <summary>The object currently under the cursor that can be used, or null.</summary>
         public IInteractable Focused => _focused;
 
         /// <summary>Prompt for the focused object, or null when nothing is usable.</summary>
@@ -41,9 +31,10 @@ namespace DeadSpin.Runtime.Interaction
         {
             _camera = GetComponent<Camera>();
             if (input == null) input = GetComponentInParent<PlayerInputReader>();
+            if (input == null) input = FindFirstObjectByType<PlayerInputReader>();
             if (input == null)
             {
-                Debug.LogError("[Interactor] No PlayerInputReader found in parents.", this);
+                Debug.LogError("[Interactor] No PlayerInputReader found.", this);
                 enabled = false;
             }
         }
@@ -55,9 +46,10 @@ namespace DeadSpin.Runtime.Interaction
 
         private void Update()
         {
-            SetFocus(FindTarget());
+            PlayerInputFrame frame = input.Current;
+            SetFocus(frame.DragHeld ? null : FindTarget(frame.PointerPosition));
 
-            if (_focused != null && input.Current.InteractPressed)
+            if (_focused != null && frame.InteractPressed)
             {
                 _focused.Interact(this);
             }
@@ -69,29 +61,15 @@ namespace DeadSpin.Runtime.Interaction
             InspectionReported?.Invoke(title, body);
         }
 
-        private IInteractable FindTarget()
+        private IInteractable FindTarget(Vector2 pointer)
         {
-            Ray ray;
-            float range;
-            if (Mode == AimMode.Pointer)
-            {
-                ray = _camera.ScreenPointToRay(input.Current.PointerPosition);
-                range = pointerRange;
-            }
-            else
-            {
-                ray = new Ray(_camera.transform.position, _camera.transform.forward);
-                range = crosshairRange;
-            }
+            if (pointer.x < 0f || pointer.y < 0f || pointer.x > Screen.width || pointer.y > Screen.height) return null;
 
-            // Walking: trigger volumes widen easy targets such as the seat. Seated: triggers are
-            // ignored so they never block clicks on the table surface behind them.
-            QueryTriggerInteraction triggers = Mode == AimMode.Pointer ? QueryTriggerInteraction.Ignore : QueryTriggerInteraction.Collide;
+            Ray ray = _camera.ScreenPointToRay(pointer);
             RaycastHit hit;
-            if (!Physics.Raycast(ray, out hit, range, interactionMask, triggers)) return null;
+            if (!Physics.Raycast(ray, out hit, range, interactionMask, QueryTriggerInteraction.Ignore)) return null;
 
             IInteractable candidate = hit.collider.GetComponentInParent<IInteractable>();
-            if (candidate == null) return null;
             // Destroyed Unity objects compare equal to null only through UnityEngine.Object.
             var asObject = candidate as UnityEngine.Object;
             if (asObject == null) return null;

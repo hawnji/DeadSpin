@@ -7,7 +7,7 @@ is the source of truth for scope; this list records decisions and extras found a
 - `WheelConfiguration` with duplicates, weights, inactive pockets, special pocket types, rings.
 - Configuration diff to drive transformations and bet migration.
 - Payouts computed from true probability with a configurable house edge per rule set.
-- Wheel inspection view (zoom on the wheel from the seat).
+- Wheel camera view follows the ball during a spin.
 - Simulation tests: 1,000,000 spins per supported pocket count.
 
 ## Phase 4: Chips
@@ -27,11 +27,11 @@ is the source of truth for scope; this list records decisions and extras found a
 
 ## Phase 8–9: Presentation and progression
 - Replace IMGUI HUD with animated UI (UI Toolkit or uGUI + TextMeshPro); UI scale setting in options.
-- Rooms: Private Lounge, Shop, Vault, Records Room, Game Master's Office (doors already placed).
+- Rooms: Private Lounge, Shop, Vault, Records Room, Game Master's Office, as menus or short transitions away from the table.
 - Five stages, roguelite unlocks, randomised runs, final four-phase encounter, five endings.
 - Save system built on serialising Core state (Core already avoids Unity types).
 
 ## Later / nice to have
 - Controller support (input already isolated in `PlayerInputReader`).
-- Key rebinding and mouse sensitivity in an options menu (`PlayerLook.Sensitivity` exists).
-- Head bob and footsteps tied to `FirstPersonController.PlanarSpeed`.
+- Key rebinding and camera pan/zoom speed in an options menu.
+- Clicks on HUD buttons should not also reach objects behind them on the table.

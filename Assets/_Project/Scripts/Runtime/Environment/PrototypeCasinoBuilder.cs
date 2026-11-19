@@ -5,9 +5,10 @@ using UnityEngine.Rendering;
 namespace DeadSpin.Runtime.Environment
 {
     /// <summary>
-    /// Builds the Phase 1 greybox roulette room from primitives: black marble floor, velvet walls,
-    /// wood panelling, gold trim, chandeliers, the roulette table placeholder, sealed doors to future
-    /// rooms and the silent Game Master. Every dimension is in metres.
+    /// Builds the greybox roulette room from primitives. The game is played from a top-down camera
+    /// over the table, so the table is the brightest, most detailed thing in the scene and the room
+    /// falls away into darkness around it: a pool of warm light on felt, the Game Master across the
+    /// table, and only hints of marble, velvet and gold at the edges. Every dimension is in metres.
     /// Used by the editor menu (Dead Spin > Build Prototype Scene); later phases replace the
     /// primitives with authored art while keeping the same interaction components.
     /// </summary>
@@ -19,7 +20,6 @@ namespace DeadSpin.Runtime.Environment
         public const float TableHeight = 0.86f;
 
         public static readonly Vector3 TableCenter = new Vector3(0f, 0f, 1.5f);
-        public static readonly Vector3 PlayerSpawnPosition = new Vector3(0f, 0.05f, -6.5f);
 
         private enum ColliderMode
         {
@@ -31,8 +31,7 @@ namespace DeadSpin.Runtime.Environment
         public sealed class Result
         {
             public GameObject Root;
-            public Transform PlayerSpawn;
-            public RouletteTableStation TableStation;
+            public Transform Table;
         }
 
         public static Result Build(PrototypeMaterials materials)
@@ -42,17 +41,10 @@ namespace DeadSpin.Runtime.Environment
             result.Root = root;
 
             BuildRoom(root.transform, materials);
-            result.TableStation = BuildTable(root.transform, materials);
+            result.Table = BuildTable(root.transform, materials);
             BuildGameMaster(root.transform, materials);
-            BuildDoors(root.transform, materials);
             BuildLighting(root.transform, materials);
             ApplyAtmosphere();
-
-            var spawn = new GameObject("PlayerSpawn").transform;
-            spawn.SetParent(root.transform, false);
-            spawn.localPosition = PlayerSpawnPosition;
-            spawn.localRotation = Quaternion.identity;
-            result.PlayerSpawn = spawn;
 
             return result;
         }
@@ -110,7 +102,7 @@ namespace DeadSpin.Runtime.Environment
             Box("CrownMoulding", wall, center + inward * 0.06f + Vector3.up * (RoomHeight - 0.12f), Size(0.24f, 0.12f), m.DarkWood, ColliderMode.None);
         }
 
-        private static RouletteTableStation BuildTable(Transform parent, PrototypeMaterials m)
+        private static Transform BuildTable(Transform parent, PrototypeMaterials m)
         {
             Transform table = Group("RouletteTable", parent);
             table.localPosition = TableCenter;
@@ -159,29 +151,13 @@ namespace DeadSpin.Runtime.Environment
             trayInspect.Configure("Inspect the chip tray", trayBox);
             trayInspect.SetText("Your Chip Tray", "Empty for now. The house will issue your chips when the first round begins.");
 
-            // Seat: the interactable that switches to table view.
-            Transform seat = Group("PlayerSeat", table);
-            seat.localPosition = new Vector3(0.45f, 0f, -1.35f);
-            Renderer seatBox = Box("Stool", seat, new Vector3(0f, 0.36f, 0f), new Vector3(0.5f, 0.06f, 0.5f), m.RedVelvet);
-            Box("StoolLeg", seat, new Vector3(0f, 0.17f, 0f), new Vector3(0.1f, 0.34f, 0.1f), m.Gold);
-            // A trigger volume above the stool and along the near rail makes the seat easy to target.
-            var seatTrigger = new GameObject("SeatTrigger");
-            seatTrigger.transform.SetParent(seat, false);
-            seatTrigger.transform.localPosition = new Vector3(0f, 0.75f, 0.35f);
-            var triggerCollider = seatTrigger.AddComponent<BoxCollider>();
-            triggerCollider.isTrigger = true;
-            triggerCollider.size = new Vector3(1.4f, 0.9f, 0.6f);
+            // The player's side of the table: an empty stool edge in the foreground of the view.
+            Transform seat = Group("PlayerStool", table);
+            seat.localPosition = new Vector3(0.45f, 0f, -1.25f);
+            Box("Stool", seat, new Vector3(0f, 0.62f, 0f), new Vector3(0.45f, 0.06f, 0.45f), m.RedVelvet);
+            Box("StoolLeg", seat, new Vector3(0f, 0.3f, 0f), new Vector3(0.08f, 0.6f, 0.08f), m.Gold);
 
-            var viewPoint = new GameObject("SeatViewPoint").transform;
-            viewPoint.SetParent(table, false);
-            viewPoint.localPosition = new Vector3(0.1f, 1.62f, -1.3f);
-            Vector3 lookTarget = new Vector3(0.05f, TableHeight, 0.05f);
-            viewPoint.localRotation = Quaternion.LookRotation(lookTarget - viewPoint.localPosition, Vector3.up);
-
-            var station = seat.gameObject.AddComponent<RouletteTableStation>();
-            station.Configure("Take a seat at the table", seatBox);
-            station.SetViewPoint(viewPoint);
-            return station;
+            return table;
         }
 
         private static void BuildLayoutGrid(Transform layout, PrototypeMaterials m, float width, float depth)
@@ -219,44 +195,17 @@ namespace DeadSpin.Runtime.Environment
             Renderer head = Sphere("Head", gm, new Vector3(0f, 2.28f, 0f), Vector3.one * 0.34f, m.Shadow);
             Sphere("Eye_L", gm, new Vector3(-0.07f, 2.31f, 0.15f), Vector3.one * 0.035f, m.EyeGlow, ColliderMode.None);
             Sphere("Eye_R", gm, new Vector3(0.07f, 2.31f, 0.15f), Vector3.one * 0.035f, m.EyeGlow, ColliderMode.None);
+            // Forearms resting on the far rail: from above, his hands are always at the edge of the table.
+            Box("Forearm_L", gm, new Vector3(-0.32f, 0.97f, 0.55f), new Vector3(0.11f, 0.1f, 0.6f), m.Shadow, ColliderMode.None);
+            Box("Forearm_R", gm, new Vector3(0.32f, 0.97f, 0.55f), new Vector3(0.11f, 0.1f, 0.6f), m.Shadow, ColliderMode.None);
+            Box("Hand_L", gm, new Vector3(-0.3f, 0.95f, 0.9f), new Vector3(0.11f, 0.05f, 0.16f), m.Shadow, ColliderMode.None);
+            Box("Hand_R", gm, new Vector3(0.3f, 0.95f, 0.9f), new Vector3(0.11f, 0.05f, 0.16f), m.Shadow, ColliderMode.None);
+            Box("Ring", gm, new Vector3(0.3f, 0.98f, 0.93f), new Vector3(0.03f, 0.02f, 0.03f), m.Gold, ColliderMode.None);
 
             var inspect = gm.gameObject.AddComponent<InspectableObject>();
             inspect.Configure("Look at the figure", body, head);
             inspect.SetText("The Game Master",
-                "He has not moved since you woke. When you meet his eyes he smiles, as if you have already agreed to something.");
-        }
-
-        private static void BuildDoors(Transform parent, PrototypeMaterials m)
-        {
-            Transform doors = Group("Doors", parent);
-            float halfW = RoomWidth * 0.5f;
-            float halfL = RoomLength * 0.5f;
-
-            Door(doors, m, "Door_Stairway", new Vector3(0f, 0f, -halfL + 0.05f), 0f,
-                "The Stairway", "A heavy iron door at the top of a short flight of steps. Locked. A brass plate reads: SETTLE YOUR ACCOUNT.");
-            Door(doors, m, "Door_Office", new Vector3(0f, 0f, halfL - 0.05f), 180f,
-                "The Game Master's Office", "Black lacquer, no handle on this side. You can hear a clock ticking behind it.");
-            Door(doors, m, "Door_Lounge", new Vector3(-halfW + 0.05f, 0f, -2f), 90f,
-                "The Private Lounge", "Muffled piano music, slightly out of tune. The door is locked for now.");
-            Door(doors, m, "Door_Shop", new Vector3(halfW - 0.05f, 0f, -2f), -90f,
-                "The Shop", "A velvet rope blocks the way. A card on it says: OPEN TO GUESTS IN GOOD STANDING.");
-        }
-
-        private static void Door(Transform parent, PrototypeMaterials m, string name, Vector3 position, float yaw, string title, string description)
-        {
-            Transform door = Group(name, parent);
-            door.localPosition = position;
-            door.localRotation = Quaternion.Euler(0f, yaw, 0f);
-
-            Renderer panel = Box("Panel", door, new Vector3(0f, 1.3f, 0.06f), new Vector3(1.4f, 2.6f, 0.1f), m.DarkWood);
-            Box("Frame_L", door, new Vector3(-0.75f, 1.35f, 0.08f), new Vector3(0.1f, 2.7f, 0.14f), m.Gold, ColliderMode.None);
-            Box("Frame_R", door, new Vector3(0.75f, 1.35f, 0.08f), new Vector3(0.1f, 2.7f, 0.14f), m.Gold, ColliderMode.None);
-            Box("Frame_Top", door, new Vector3(0f, 2.7f, 0.08f), new Vector3(1.6f, 0.1f, 0.14f), m.Gold, ColliderMode.None);
-            Sphere("Handle", door, new Vector3(0.5f, 1.15f, 0.14f), Vector3.one * 0.07f, m.Gold, ColliderMode.None);
-
-            var inspect = door.gameObject.AddComponent<InspectableObject>();
-            inspect.Configure("Try the door", panel);
-            inspect.SetText(title, description);
+                "He has not moved since you sat down. His hands rest on the far edge of the table, one gold ring tapping slowly. When you look up, he smiles, as if you have already agreed to something.");
         }
 
         private static void BuildLighting(Transform parent, PrototypeMaterials m)
@@ -269,19 +218,32 @@ namespace DeadSpin.Runtime.Environment
             key.transform.localPosition = TableCenter + Vector3.up * (RoomHeight - 0.3f);
             key.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             key.type = LightType.Spot;
-            key.spotAngle = 62f;
-            key.innerSpotAngle = 35f;
+            key.spotAngle = 70f;
+            key.innerSpotAngle = 45f;
             key.range = 7f;
-            key.intensity = 9f;
+            key.intensity = 12f;
             key.color = new Color(1f, 0.86f, 0.66f);
             key.shadows = LightShadows.Soft;
 
-            Chandelier(lights, m, TableCenter + new Vector3(0f, RoomHeight - 0.9f, 0f), 2.2f);
-            Chandelier(lights, m, new Vector3(0f, RoomHeight - 0.9f, -5f), 1.6f);
+            // Rim light behind the Game Master so his silhouette separates from the dark.
+            var rim = new GameObject("GameMasterRim").AddComponent<Light>();
+            rim.transform.SetParent(lights, false);
+            rim.transform.localPosition = TableCenter + new Vector3(0.2f, 2.6f, 3.2f);
+            rim.transform.LookAt(TableCenter + new Vector3(0.2f, 1.6f, 1.75f));
+            rim.type = LightType.Spot;
+            rim.spotAngle = 50f;
+            rim.range = 5f;
+            rim.intensity = 2.5f;
+            rim.color = new Color(0.75f, 0.25f, 0.2f);
+            rim.shadows = LightShadows.None;
+
+            // The chandeliers hang off to the sides so they never block the top-down view.
+            Chandelier(lights, m, new Vector3(-4f, RoomHeight - 0.7f, 1.5f), 1.2f);
+            Chandelier(lights, m, new Vector3(4f, RoomHeight - 0.7f, 1.5f), 1.2f);
 
             // Wall sconces.
             float halfW = RoomWidth * 0.5f - 0.2f;
-            float[] zs = { -6f, 2f, 6.5f };
+            float[] zs = { -3f, 2f, 6.5f };
             foreach (float z in zs)
             {
                 Sconce(lights, m, new Vector3(-halfW, 2.1f, z));
@@ -332,11 +294,11 @@ namespace DeadSpin.Runtime.Environment
         {
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.055f, 0.04f, 0.04f);
+            RenderSettings.ambientLight = new Color(0.04f, 0.03f, 0.03f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.02f, 0.014f, 0.014f);
-            RenderSettings.fogDensity = 0.05f;
+            RenderSettings.fogDensity = 0.09f;
         }
 
         // ---------- primitive helpers ----------
