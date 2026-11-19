@@ -28,5 +28,19 @@ namespace DeadSpin.Core.Wheel
             // Unreachable when TotalWeight matches the pockets; fail loudly rather than bias the result.
             throw new InvalidOperationException("Weighted draw fell outside the wheel.");
         }
+
+        /// <summary>Draws an outer-ring segment, weighted by segment width. Independent of the pocket draw.</summary>
+        public static int SelectRingSegment(WheelRing ring, IRandomSource random)
+        {
+            if (ring == null) throw new ArgumentNullException(nameof(ring));
+            if (random == null) throw new ArgumentNullException(nameof(random));
+            int roll = random.NextInt(ring.TotalWeight);
+            for (int i = 0; i < ring.Segments.Count; i++)
+            {
+                if (roll < ring.Segments[i].Weight) return i;
+                roll -= ring.Segments[i].Weight;
+            }
+            throw new InvalidOperationException("Ring draw fell outside the ring.");
+        }
     }
 }
