@@ -4,7 +4,7 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
 
 | Phase | Goal | Status |
 |---|---|---|
-| 1. Foundation | First-person casino where the player can approach and interact with the table | 🔨 code complete, awaiting in-Editor verification |
+| 1. Foundation | Top-down table view where the player can look over and interact with the table | 🔨 code complete, awaiting in-Editor verification |
 | 2. Core roulette | Standard wheel, pocket generation, ball and spin, result resolution, betting layout, basic bets, payouts | ⏳ |
 | 3. Dynamic wheel | Procedural geometry, 12–100+ pockets, physical transformations, clone/remove/rearrange, rings, validation | ⏳ |
 | 4. Betting interaction | Physical chips, denominations, pickup and placement, stacking, timer, betting UI | ⏳ |
@@ -19,7 +19,7 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
 
 | Requirement | Phase | Status |
 |---|---|---|
-| First-person movement | 1 | ✅ code |
+| Table camera (replaces first-person movement) | 1 | ✅ code |
 | One interactive roulette table | 1 | ✅ code (placeholder) |
 | Working 36-pocket wheel | 2 | ⏳ |
 | Working 72-pocket wheel | 3 | ⏳ |
@@ -41,7 +41,11 @@ Status key: ✅ done · 🔨 in progress · ⏳ not started
 - 2026-11-18: Repository created from scratch. Core run state, ledger, outcomes, state machine,
   round flow and RNG with 41 tests passing headless. Player, interaction, greybox casino,
   table, HUD and scene builder written and type-checked against UnityEngine reference
-  assemblies. Waiting on an in-Editor run on 6000.6.9f1 (see TESTING_LOG.md checklist).
+  assemblies.
+- 2026-11-18: Owner verified the first-person build in the Editor (all working), then changed
+  direction to a table-only game with a top-down camera. Walking removed; `TableCameraRig` and
+  `TableViewNavigator` added; room relit around the table. 50 tests passing. Waiting on an
+  in-Editor check of the new view.
 
 ## Next: Phase 2 plan (draft)
 

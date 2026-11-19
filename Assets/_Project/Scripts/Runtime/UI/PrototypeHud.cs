@@ -31,6 +31,9 @@ namespace DeadSpin.Runtime.UI
         private GUIStyle _value;
         private GUIStyle _title;
         private GUIStyle _prompt;
+        private GUIStyle _promptShadow;
+        private GUIStyle _tab;
+        private GUIStyle _tabActive;
         private GUIStyle _button;
         private GUIStyle _small;
         private Texture2D _panelTexture;
@@ -87,7 +90,7 @@ namespace DeadSpin.Runtime.UI
 
         private void OnModeChanged(GameMode previous, GameMode next)
         {
-            if (next == GameMode.Exploring || next == GameMode.RunEnded) _inspectionHideTime = 0f;
+            if (next == GameMode.RunEnded) _inspectionHideTime = 0f;
         }
 
         private void OnGUI()
@@ -107,12 +110,9 @@ namespace DeadSpin.Runtime.UI
 
             switch (session.Mode)
             {
-                case GameMode.Exploring:
-                    DrawCrosshair(width, height);
-                    DrawPrompt(width, height);
-                    break;
                 case GameMode.AtTable:
-                    DrawPrompt(width, height);
+                    DrawViewBar(width);
+                    DrawPrompt(scale);
                     break;
                 case GameMode.Paused:
                     DrawPauseMenu(width, height);
@@ -159,34 +159,43 @@ namespace DeadSpin.Runtime.UI
 
         private void DrawModeHint(float width, float height)
         {
-            string hint;
-            switch (session.Mode)
-            {
-                case GameMode.Exploring: hint = "WASD move   Shift sprint   E / Click interact   Esc pause"; break;
-                case GameMode.AtTable: hint = "Point and click to inspect   Esc / Tab stand up"; break;
-                default: hint = null; break;
-            }
-            if (hint == null) return;
+            if (session.Mode != GameMode.AtTable) return;
+            string hint = "Click inspect   WASD / right-drag pan   Scroll zoom   1-4 / Tab views   Esc pause";
             if (Debug.isDebugBuild) hint += "   F1 dev panel";
             GUI.Label(new Rect(24f, height - 44f, width - 48f, 28f), hint, _small);
         }
 
-        private void DrawCrosshair(float width, float height)
+        /// <summary>Camera view tabs along the top centre; the active one is highlighted.</summary>
+        private void DrawViewBar(float width)
         {
-            bool focused = session.Interactor != null && session.Interactor.CurrentPrompt != null;
-            float size = focused ? 8f : 4f;
-            Color previous = GUI.color;
-            GUI.color = focused ? Gold : new Color(1f, 1f, 1f, 0.6f);
-            GUI.DrawTexture(new Rect(width * 0.5f - size * 0.5f, height * 0.5f - size * 0.5f, size, size), Texture2D.whiteTexture);
-            GUI.color = previous;
+            var rig = session.CameraRig;
+            if (rig == null || rig.Navigator == null) return;
+
+            const float tabWidth = 170f;
+            const float tabHeight = 34f;
+            float total = rig.ViewCount * tabWidth;
+            float x = width * 0.5f - total * 0.5f;
+            for (int i = 0; i < rig.ViewCount; i++)
+            {
+                bool active = i == rig.Navigator.CurrentView;
+                var rect = new Rect(x + i * tabWidth + 4f, 24f, tabWidth - 8f, tabHeight);
+                GUIStyle style = active ? _tabActive : _tab;
+                if (GUI.Button(rect, (i + 1) + "  " + rig.GetViewName(i), style)) rig.Navigator.SelectView(i);
+            }
         }
 
-        private void DrawPrompt(float width, float height)
+        /// <summary>Shows the prompt for the hovered object just below the cursor.</summary>
+        private void DrawPrompt(float scale)
         {
             string prompt = session.Interactor != null ? session.Interactor.CurrentPrompt : null;
-            if (string.IsNullOrEmpty(prompt)) return;
-            string key = session.Mode == GameMode.AtTable ? "[Click]  " : "[E]  ";
-            GUI.Label(new Rect(0f, height * 0.5f + 40f, width, 40f), key + prompt, _prompt);
+            if (string.IsNullOrEmpty(prompt) || session.PlayerInput == null) return;
+            Vector2 pointer = session.PlayerInput.Current.PointerPosition;
+            // Screen pixels (origin bottom-left) to scaled GUI space (origin top-left).
+            float gx = pointer.x / scale;
+            float gy = (Screen.height - pointer.y) / scale;
+            var rect = new Rect(gx + 18f, gy + 18f, 420f, 32f);
+            GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), prompt, _promptShadow);
+            GUI.Label(rect, prompt, _prompt);
         }
 
         private void DrawInspection(float width, float height)
@@ -326,8 +335,20 @@ namespace DeadSpin.Runtime.UI
             _small = new GUIStyle(GUI.skin.label) { fontSize = 18, wordWrap = true };
             _small.normal.textColor = Bone;
 
-            _prompt = new GUIStyle(GUI.skin.label) { fontSize = 24, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+            _prompt = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.UpperLeft, fontStyle = FontStyle.Bold };
             _prompt.normal.textColor = Gold;
+            _promptShadow = new GUIStyle(_prompt);
+            _promptShadow.normal.textColor = new Color(0f, 0f, 0f, 0.85f);
+
+            _tab = new GUIStyle(GUI.skin.button) { fontSize = 17 };
+            _tab.normal.background = _panelTexture;
+            _tab.hover.background = _buttonHoverTexture;
+            _tab.active.background = _buttonHoverTexture;
+            _tab.normal.textColor = new Color(Bone.r, Bone.g, Bone.b, 0.7f);
+            _tab.hover.textColor = Gold;
+            _tabActive = new GUIStyle(_tab) { fontStyle = FontStyle.Bold };
+            _tabActive.normal.background = _buttonTexture;
+            _tabActive.normal.textColor = Gold;
 
             _button = new GUIStyle(GUI.skin.button) { fontSize = 20, fontStyle = FontStyle.Bold };
             _button.normal.background = _buttonTexture;

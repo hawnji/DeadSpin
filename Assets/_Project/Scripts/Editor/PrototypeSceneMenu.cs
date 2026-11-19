@@ -42,8 +42,8 @@ namespace DeadSpin.EditorTools
 
             AddSceneToBuildSettings(ScenePath);
             AssetDatabase.SaveAssets();
-            Selection.activeGameObject = result.Player;
-            Debug.Log("[Dead Spin] Prototype scene built and saved to " + ScenePath + ". Press Play to walk around.");
+            Selection.activeGameObject = result.Camera.gameObject;
+            Debug.Log("[Dead Spin] Prototype scene built and saved to " + ScenePath + ". Press Play to sit at the table.");
         }
 
         [MenuItem("Dead Spin/Open Prototype Scene", priority = 1)]

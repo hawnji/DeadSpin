@@ -12,14 +12,13 @@ namespace DeadSpin.Core.GameState
     {
         private static readonly Dictionary<GameMode, GameMode[]> Allowed = new Dictionary<GameMode, GameMode[]>
         {
-            { GameMode.Boot, new[] { GameMode.Exploring } },
-            { GameMode.Exploring, new[] { GameMode.AtTable, GameMode.Paused, GameMode.RunEnded } },
-            { GameMode.AtTable, new[] { GameMode.Exploring, GameMode.Paused, GameMode.RunEnded } },
-            { GameMode.Paused, new[] { GameMode.Exploring, GameMode.AtTable, GameMode.RunEnded } },
+            { GameMode.Boot, new[] { GameMode.AtTable } },
+            { GameMode.AtTable, new[] { GameMode.Paused, GameMode.RunEnded } },
+            { GameMode.Paused, new[] { GameMode.AtTable, GameMode.RunEnded } },
             { GameMode.RunEnded, new GameMode[0] }
         };
 
-        private GameMode _modeBeforePause = GameMode.Exploring;
+        private GameMode _modeBeforePause = GameMode.AtTable;
 
         public GameMode Current { get; private set; } = GameMode.Boot;
 

@@ -27,27 +27,41 @@ Runtime and Editor scripts compile with no errors against UnityEngine/UnityEdito
 assemblies, both with the legacy-input branch and with no input backend defined. The Input
 System branch could not be compiled outside Unity.
 
+### In-Editor result (owner)
+
+The owner ran the first-person build in Unity 6000.6.9f1 and reported that everything worked.
+
+## 2026-11-18: Top-down table view
+
+### Automated: 50 passed, 0 failed (headless)
+
+Added `TableViewNavigatorTests` (9): starts on the first view, next/previous wrap, invalid
+indexes rejected, zoom and pan clamped, switching views resets framing, the locked Game Master
+view ignores pan and zoom, change events fire only on real changes, invalid construction
+throws. `GameStateMachineTests` rewritten for the table-only modes (6).
+
+### Static
+
+Runtime and Editor scripts type-check with no errors against the reference assemblies (legacy
+input branch and no-backend branch). The Input System branch was not compiled outside Unity.
+
 ### Not yet verified: in-Editor checklist (Unity 6000.6.9f1)
 
-The cloud environment cannot run Unity. These checks need to be done in the Editor:
-
-1. Project opens with no compile errors or warnings from `Assets/_Project`.
-2. **Dead Spin > Build Prototype Scene** creates `Assets/_Project/Scenes/Prototype.unity`,
-   ten materials in `Assets/_Project/Materials/Prototype`, and adds the scene to Build Settings.
-3. Play: the cursor locks, the HUD shows $2,500 balance, $50,000 debt, round 1 / 18.
-4. WASD moves smoothly, Shift sprints, the mouse looks around, pitch stops at about ±80°.
-   The player cannot walk through walls, pillars, the table or the Game Master.
-5. Looking at the stool from about 2 m shows "[E] Take a seat at the table" and the stool glows.
-6. E sits: the camera glides (about 0.75 s) to a view of the layout and wheel; the cursor
-   appears; moving the mouse drifts the view slightly.
-7. Hovering the wheel, layout, chip tray and the Game Master shows prompts; clicking shows
-   their descriptions at the bottom of the screen.
-8. Esc or Tab stands up; the camera glides back; walking works again.
-9. Each of the four doors can be inspected.
-10. Esc while walking pauses (time stops); Resume returns; Restart run resets the HUD and
-    position.
-11. F1 opens the dev panel. "Play an empty round" advances the round counter. Playing 18
-    rounds shows TIME IS UP. "- $1,000" three times shows THE HOUSE ALWAYS WINS. "Forgive all
-    debt" shows FREEDOM. "New run" starts over.
-12. The Test Runner shows 41 EditMode tests passing.
-13. Frame rate stays at or above 60 FPS in the Game view on a midrange PC.
+1. Run **Dead Spin > Build Prototype Scene** again (it replaces the old scene). No errors.
+2. Play: the game starts looking down at the table. The cursor is visible. The HUD shows $2,500,
+   $50,000, round 1 / 18 and four view tabs at the top.
+3. The table is the brightest thing on screen; the room fades into darkness around it. The
+   Game Master's hands rest on the far rail.
+4. 1, 2, 3, 4, Tab and clicking the tabs move smoothly between Table, Betting layout, Wheel and
+   The Game Master. Nothing snaps.
+5. WASD / arrows and right- or middle-drag pan; the view stops at the table's edges. Scroll
+   zooms in and out within limits. Switching view resets pan and zoom. The Game Master view
+   cannot be panned or zoomed.
+6. Hovering the wheel, layout, chip tray and Game Master makes them glow and shows a prompt by
+   the cursor; clicking shows their description at the bottom.
+7. Esc pauses (camera holds still, time stops); Esc or Resume continues; Restart run resets the
+   HUD and returns to the Table view.
+8. F1 dev panel: "Play an empty round", "- $1,000", "Forgive all debt" reach the same end
+   screens as before.
+9. Test Runner shows 50 EditMode tests passing.
+10. 60 FPS or better in the Game view on a midrange PC.

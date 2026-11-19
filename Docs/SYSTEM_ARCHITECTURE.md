@@ -4,14 +4,14 @@
 
 ```
  ┌───────────────────────────── DeadSpin.Runtime (Unity) ─────────────────────────────┐
- │ GameSession ── PlayerInputReader ── FirstPersonController / PlayerLook / CameraFocus │
- │      │                 Interactor ── Interactable (Inspectable, RouletteTableStation)│
+ │ GameSession ── PlayerInputReader ── TableCameraRig (uses Core TableViewNavigator)     │
+ │      │                 Interactor ── Interactable (InspectableObject)               │
  │      │                 PrototypeHud      Environment builders (greybox)              │
  └──────┼───────────────────────────────────────────────────────────────────────────────┘
         │ owns, listens to events
  ┌──────▼──────────────────────── DeadSpin.Core (pure C#) ──────────────────────────────┐
  │ Run ── Ledger (money/debt)   RoundFlow (phases)   RunOutcomeEvaluator   IRandomSource│
- │ GameStateMachine (modes)     RunConfig                                               │
+ │ GameStateMachine (modes)     RunConfig            TableViewNavigator (camera rules)   │
  └──────────────────────────────────────────────────────────────────────────────────────┘
  DeadSpin.Editor → PrototypeSceneMenu (uses Runtime factory)
  DeadSpin.Tests.EditMode → Core
@@ -31,25 +31,23 @@ The `noEngineReferences` flag on `DeadSpin.Core.asmdef` enforces this.
 | `RoundFlow` | Core | Round phases. Timed phases tick; spin and resolution advance only when their systems report back. | RunConfig |
 | `GameStateMachine` | Core | Top-level modes with an explicit transition table. | none |
 | `SeededRandom` | Core | PCG32 RNG with unbiased ranges. | none |
-| `GameSession` | Runtime | Owns the Run and state machine; the only code that changes mode; applies each mode to cursor, movement, look, camera and interaction. Single instance. | Core, player components |
+| `TableViewNavigator` | Core | Camera view selection, zoom and pan limits for the table view. | none |
+| `GameSession` | Runtime | Owns the Run and state machine; the only code that changes mode; applies each mode to camera controls, interaction and time scale. Single instance. | Core, table rig |
 | `PlayerInputReader` | Runtime | Samples devices once per frame (Input System or legacy) into `PlayerInputFrame`. | none |
-| `FirstPersonController` | Runtime | CharacterController movement. | PlayerInputReader |
-| `PlayerLook` | Runtime | Yaw on body, pitch on pivot, smoothing. | PlayerInputReader |
-| `CameraFocus` | Runtime | Blends the camera to and from focus points (table view) with cursor drift. | PlayerInputReader |
-| `Interactor` | Runtime | Raycasts from crosshair or cursor; focus and use of `IInteractable`; relays inspection text. | PlayerInputReader |
-| `Interactable`, `InspectableObject`, `RouletteTableStation` | Runtime | Prompts, highlight, inspection, sit at table. | Interactor, GameSession |
+| `TableCameraRig` | Runtime | Top-down camera: view presets in table space, smoothed pan, zoom, pitch and FOV, subtle cursor drift. | PlayerInputReader, TableViewNavigator |
+| `Interactor` | Runtime | Raycasts through the cursor; focus and use of `IInteractable`; relays inspection text. | PlayerInputReader |
+| `Interactable`, `InspectableObject` | Runtime | Prompts, highlight, inspection. | Interactor |
 | `PrototypeHud` | Runtime | IMGUI HUD, pause, end screen, dev panel. Configurable UI scale. | GameSession |
-| `PrototypeCasinoBuilder`, `PrototypeMaterials`, `PrototypeSceneFactory` | Runtime | Generate the greybox room, palette and player rig. | Interaction, Player |
+| `PrototypeCasinoBuilder`, `PrototypeMaterials`, `PrototypeSceneFactory` | Runtime | Generate the greybox room, palette and table camera. | Interaction, Player |
 | `PrototypeSceneMenu` | Editor | Builds and saves the prototype scene and materials. | Runtime factory |
 
 ## Mode handling
 
-| Mode | Movement | Look | Cursor | Interaction aim | Camera | Time |
-|---|---|---|---|---|---|---|
-| Exploring | on | on | locked | crosshair | first person | 1 |
-| AtTable | off | off | free | cursor | table view | 1 |
-| Paused | off | off | free | off | unchanged | 0 |
-| RunEnded | off | off | free | off | first person | 1 |
+| Mode | Camera controls | Interaction | Cursor | Time |
+|---|---|---|---|---|
+| AtTable | on | on | visible | 1 |
+| Paused | off (holds pose) | off | visible | 0 |
+| RunEnded | off | off | visible | 1 |
 
 ## Planned systems (master prompt section 19) and where they will live
 
