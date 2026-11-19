@@ -179,6 +179,7 @@ namespace DeadSpin.Runtime.Environment
             Box("Hand_R", gm, new Vector3(0.3f, 0.95f, 0.9f), new Vector3(0.11f, 0.05f, 0.16f), m.Shadow, ColliderMode.None);
             Box("Ring", gm, new Vector3(0.3f, 0.98f, 0.93f), new Vector3(0.03f, 0.02f, 0.03f), m.Gold, ColliderMode.None);
 
+            gm.gameObject.AddComponent<Presentation.GameMasterView>();
             var inspect = gm.gameObject.AddComponent<InspectableObject>();
             inspect.Configure("Look at the figure", body, head);
             inspect.SetText("The Game Master",

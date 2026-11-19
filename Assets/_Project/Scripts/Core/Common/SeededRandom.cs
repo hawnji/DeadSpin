@@ -17,6 +17,13 @@ namespace DeadSpin.Core.Common
 
         public ulong Seed { get; }
 
+        /// <summary>The generator's internal state, for save games. Restoring it continues the exact sequence.</summary>
+        public ulong State
+        {
+            get { return _state; }
+            set { _state = value; }
+        }
+
         public SeededRandom(ulong seed)
         {
             Seed = seed;

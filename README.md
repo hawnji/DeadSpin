@@ -7,7 +7,7 @@ rules. Win enough to buy your freedom before the rounds run out.
 
 All currency in the game is fictional. There is no real-money gambling of any kind.
 
-**Status:** Phase 2 (Core roulette): a playable single-zero roulette table. See [Docs/DEVELOPMENT_ROADMAP.md](Docs/DEVELOPMENT_ROADMAP.md).
+**Status:** All ten phases are implemented: a full run from the title screen through five stages, the final table and six endings, with saves and unlocks. The core is covered by 161 headless tests; the Unity side is type-checked but has not yet been run in the Editor. See [Docs/DEVELOPMENT_ROADMAP.md](Docs/DEVELOPMENT_ROADMAP.md) and [Docs/KNOWN_ISSUES.md](Docs/KNOWN_ISSUES.md).
 
 ## Requirements
 
@@ -51,14 +51,21 @@ legacy Input Manager or with "Both".
 | Start a round / no more bets | Space |
 | Place a chip on a spot | Left click |
 | Take a chip back | Shift + left click |
-| Choose chip value ($10, $25, $100, $500) | Q / E, or the chip buttons |
+| Choose chip value ($10, $25, $100, $500, $1,000) | Q / E, or the chip buttons |
+| Choose chip kind (magnetic, sticky, weighted, fragile, protected) | Chip kind buttons (when you own some) |
+| Special bets | Click the boxes below the even-money row (from stage 2) |
+| Use an ability | Ability buttons at the bottom; right-click Insurance or Double Down to choose the bet |
+| Rooms (Lounge, Shop, Vault, Records, Office) | Room buttons under the status panel |
 | Return all chips | Backspace, or Clear |
 | Inspect the wheel, chip tray, Game Master | Left click |
 | Pan across the table | WASD or arrow keys, or drag with right / middle mouse |
 | Zoom | Scroll wheel |
 | Switch view (table, betting layout, wheel, Game Master) | 1–4, Tab, or the tabs at the top |
-| Pause | Esc |
-| Developer panel | F1 (Editor and development builds) |
+| Pause, save and quit to title | Esc |
+| Developer panel (impose rules, money, events) | F1 (Editor and development builds) |
+
+Editor menu: **Dead Spin > Simulate Runs** plays hundreds of runs headless and writes
+`Docs/BALANCE_REPORT.md`; **Dead Spin > Delete Save Files** resets saves and unlocks.
 
 ## Tests
 

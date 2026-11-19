@@ -31,6 +31,26 @@ namespace DeadSpin.Core.GameState
         /// <summary>Money wagered on the table and not yet resolved. Set by the betting system (Phase 2+).</summary>
         public long MoneyAtRisk { get; private set; }
 
+        /// <summary>Minimum bet after rule modifiers; bankruptcy is judged against this. Set by the table.</summary>
+        public long EffectiveMinimumBet
+        {
+            get { return _effectiveMinimumBet > 0 ? _effectiveMinimumBet : Config.MinimumBet; }
+            set { _effectiveMinimumBet = value; }
+        }
+        private long _effectiveMinimumBet;
+
+        /// <summary>
+        /// Optional extra failure check supplied by the economy (missed installment, unpayable mandatory
+        /// wager). Returns true when the player can no longer meet the game's financial requirements.
+        /// </summary>
+        public Func<bool> ExtraBankruptcyCheck { get; set; }
+
+        /// <summary>Optional override that decides the outcome at the deadline (e.g. the final encounter's endings).</summary>
+        public Func<RunOutcome> DeadlineOverride { get; set; }
+
+        /// <summary>Optional final say on every terminal outcome (the ending system turns Freedom into The New Owner, a missed deadline into The Loophole).</summary>
+        public Func<RunOutcome, RunOutcome> OutcomeOverride { get; set; }
+
         /// <summary>Raised once when the run reaches a terminal outcome.</summary>
         public event Action<RunOutcome> Ended;
 
@@ -79,7 +99,9 @@ namespace DeadSpin.Core.GameState
             if (IsOver) return Outcome;
 
             RunOutcome result = RunOutcomeEvaluator.Evaluate(
-                Ledger.Balance, Ledger.Debt, MoneyAtRisk, RoundsPlayed, Config.TotalRounds, Config.MinimumBet);
+                Ledger.Balance + Ledger.Stored, Ledger.Debt, MoneyAtRisk, RoundsPlayed, Config.TotalRounds, EffectiveMinimumBet);
+            if (result == RunOutcome.InProgress && ExtraBankruptcyCheck != null && ExtraBankruptcyCheck()) result = RunOutcome.Bankrupt;
+            if (result == RunOutcome.DeadlineMissed && DeadlineOverride != null) result = DeadlineOverride();
 
             if (RunOutcomeEvaluator.IsTerminal(result))
             {
@@ -89,11 +111,37 @@ namespace DeadSpin.Core.GameState
                     return Outcome;
                 }
 
+                if (OutcomeOverride != null) result = OutcomeOverride(result);
+                if (!RunOutcomeEvaluator.IsTerminal(result)) return Outcome;
                 Outcome = result;
                 Round.Abort();
                 Ended?.Invoke(result);
             }
             return Outcome;
+        }
+
+        /// <summary>Ends the run with a specific outcome (endings decided by the story, e.g. accepting the Game Master's deal).</summary>
+        public void ForceOutcome(RunOutcome outcome)
+        {
+            if (IsOver || !RunOutcomeEvaluator.IsTerminal(outcome)) return;
+            Outcome = outcome;
+            Round.Abort();
+            Ended?.Invoke(outcome);
+        }
+
+        /// <summary>Restores counters from a save. Only valid on a fresh run between rounds.</summary>
+        public void RestoreProgress(int roundsPlayed)
+        {
+            if (Round.InProgress) throw new InvalidOperationException("Cannot restore during a round.");
+            RoundsPlayed = Math.Max(0, Math.Min(roundsPlayed, Config.TotalRounds));
+            Ledger.CurrentRound = CurrentRoundNumber;
+        }
+
+        /// <summary>Adds rounds to the deadline (final encounter, contracts).</summary>
+        public void ExtendDeadline(int rounds)
+        {
+            if (rounds <= 0) return;
+            Config.TotalRounds += rounds;
         }
 
         private static bool IsResolvingSpin(RoundPhase phase)

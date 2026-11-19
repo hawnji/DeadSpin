@@ -8,7 +8,7 @@ namespace DeadSpin.Tests
 {
     public class BettingTests
     {
-        private static readonly StandardLayout Layout = new StandardLayout();
+        private static readonly BettingLayout Layout = new BettingLayout();
         private static readonly WheelConfiguration European = StandardWheels.European();
 
         private static int[] Winners(BetSelection selection)
@@ -38,10 +38,10 @@ namespace DeadSpin.Tests
         {
             foreach (BetSpot spot in Layout.Spots)
             {
-                Assert.GreaterOrEqual(spot.CenterX - spot.Width / 2f, StandardLayout.MinX - 1e-4f, spot.Selection.Key);
-                Assert.LessOrEqual(spot.CenterX + spot.Width / 2f, StandardLayout.MaxX + 1e-4f, spot.Selection.Key);
-                Assert.GreaterOrEqual(spot.CenterY - spot.Height / 2f, StandardLayout.MinY - 0.2f, spot.Selection.Key);
-                Assert.LessOrEqual(spot.CenterY + spot.Height / 2f, StandardLayout.MaxY + 1e-4f, spot.Selection.Key);
+                Assert.GreaterOrEqual(spot.CenterX - spot.Width / 2f, Layout.MinX - 1e-4f, spot.Selection.Key);
+                Assert.LessOrEqual(spot.CenterX + spot.Width / 2f, Layout.MaxX + 1e-4f, spot.Selection.Key);
+                Assert.GreaterOrEqual(spot.CenterY - spot.Height / 2f, Layout.MinY - 0.2f, spot.Selection.Key);
+                Assert.LessOrEqual(spot.CenterY + spot.Height / 2f, Layout.MaxY + 1e-4f, spot.Selection.Key);
             }
         }
 

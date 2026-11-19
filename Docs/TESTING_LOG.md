@@ -109,3 +109,67 @@ Not compiled here: the Input System branch and `Shaders/WorldText.shader`.
 10. Losing everything shows THE HOUSE ALWAYS WINS after the spin; 18 rounds with debt shows TIME IS UP.
 11. Pause during a spin freezes the ball; resuming continues and settles correctly.
 12. Test Runner: 85 EditMode tests pass.
+
+## 2026-11-19: Phases 3 to 10, the full game
+
+### Automated: 161 passed, 0 failed (headless, .NET 8)
+
+New suites on top of Phases 1 and 2:
+
+| Suite | Tests | What it proves |
+|---|---|---|
+| `DynamicWheelTests` (Phase 3) | 14 | Every wheel preset and size is valid; generated wheels alternate colours; 72- and 100-pocket simulations match calculated odds; payouts stay honest on every size; multiple balls; clone, remove, add, swap, shuffle, resize, colour reversal, weights and rings are validated and pure; the layout adapts and expands mid-run |
+| `RuleEngineTests` (Phase 5) | 11 | Catalog covers every intervention type; every rule activates or gives a reason; timed rules expire; conflicts resolve by priority; fairness guards (minimum bet, payable debt); the red tax's combination loophole; the Game Master's brain targets habits and never overspends; a dialogue line exists for every trigger |
+| `CampaignTests` (Phases 4 to 9) | 40 (+parameterised cases) | Stages, installments with grace and default, voluntary payments, the Vault, bankruptcy warnings, contracts, Debt Freeze, abilities (cost, cooldown, House Inspection, Chip Anchor vs shakes, Rule Cancel, consumables, insurance), special pockets (relief, tax, Influence, ticket, bomb, curse), events (House Collects, Double Spin, the auction), challenges, the final encounter and His Final Offer, endings, records, lounge, shop, Marks and unlocks, JSON, save and load continuing the same seeded game, saving refused mid-round |
+| `CampaignSimulationTests` (Phase 10) | 4 styles x 40 runs | Every simulated run reaches an ending; money, debt and Influence never go negative; money at risk matches the chips on the table; the wheel and table modifiers stay valid; no exceptions |
+
+### Balance simulator: 200 runs per bot style (seeded, headless)
+
+| Bot | Win rate | Endings | Average rounds | Notes |
+|---|---|---|---|---|
+| Cautious (small outside bets) | 0% | 115 house always wins, 85 The Deal | 15.6 | Survives longest; often takes His Final Offer |
+| Balanced | 0% | 166 house always wins, 34 deadline | 15.8 | Most runs end at the stage-4 installment (round 15) |
+| Aggressive | 1.0% | 192 house always wins, 2 freedom, 6 deadline | 13.3 | |
+| Bold (all-in long shots) | 3.5% | 193 house always wins, 7 freedom | 1.4 | Lives or dies in the first rounds |
+
+0 invariant problems across 800 runs. Turning about $2,500 into $50,000 at near-fair odds is
+close to the mathematical limit for scripted play, so these numbers are a floor, not a target.
+Regenerate them any time with **Dead Spin > Simulate Runs** (writes `Docs/BALANCE_REPORT.md`).
+
+### Static: Unity scripts type-check
+
+All Runtime and Editor scripts (including the new `GameSession`, `RouletteTableController`,
+`GameHud`, `GameMasterView`, `EnvironmentDirector`, `AudioDirector` and `BalanceSimulatorMenu`)
+compile with no errors against the Unity reference assemblies, with the legacy-input branch and
+with no input backend defined. Not compiled here: the Input System branch and shaders.
+
+### Not yet verified: full-game checklist (Unity 6000.6.9f1)
+
+1. **Dead Spin > Build Prototype Scene** again. No errors. Press Play: the title screen shows
+   New run, Continue (greyed out), Unlocks and Quit.
+2. New run: the table HUD shows balance, debt, Influence, round 1 / 18, bet limits and the stage
+   name. The Game Master greets you. Rooms buttons sit under the status panel.
+3. Space starts the round. Place bets, change chip value (Q/E) and kind; click a special-bet box
+   (Neighbours asks for a number, Combination opens a picker). Stage 1 refuses special bets.
+4. Close betting: the ball spins and settles; result, special pocket messages and loopholes show
+   at the top; history updates.
+5. Over the rounds he announces rules (top-right list, hidden ones counted), sometimes mid-bet;
+   the wheel visibly transforms and the layout rebuilds. Rule ends appear in the feed.
+6. Abilities bar: Wheel Analysis adds odds to the hover text; House Inspection reveals hidden
+   rules and the wheel; Lucky Coin asks for a number; right-click Insurance or Double Down to pick
+   a bet. Disabled buttons explain why on hover.
+7. Rooms: Lounge rest (+1 Influence once per stage); Shop buys; Vault deposit, withdraw and pay
+   debt; Records unlock by stage and loopholes; Office shows contracts from stage 2.
+8. Offers: a challenge or contract panel appears on the right; an auction lets you bid.
+9. Installments are collected after rounds 7, 11 and 15; a miss adds a late fee, a second miss
+   ends the run. Warnings appear under the rooms.
+10. Lights flicker more and tint by stage; names appear on the walls from stage 3; the Game
+    Master's eyes change with his mood and he grows toward the final table.
+11. Round 16 onward: the final table phases; before the last spin, His Final Offer blocks play
+    until you choose.
+12. The ending screen shows the ending, stats and Marks; Unlocks spends Marks; a new run uses
+    them. Esc > Save and return to title, then Continue resumes between rounds.
+13. Sounds: chips, ball roll and clicks, win and loss, transformation, shakes, heartbeat when
+    time or money runs low, ambient drone, a murmur when he speaks.
+14. **Dead Spin > Simulate Runs (100 per style)** writes `Docs/BALANCE_REPORT.md`.
+15. Test Runner: 161 EditMode tests pass.

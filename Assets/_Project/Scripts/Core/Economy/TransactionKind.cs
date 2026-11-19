@@ -18,6 +18,9 @@ namespace DeadSpin.Core.Economy
         DebtIncrease,
         DebtRelief,
         ContractPayout,
-        Fee
+        Fee,
+        /// <summary>Money moved from the balance into the Vault (safe, but cannot be wagered).</summary>
+        VaultDeposit,
+        VaultWithdrawal
     }
 }

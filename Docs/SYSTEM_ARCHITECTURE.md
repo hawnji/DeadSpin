@@ -3,18 +3,22 @@
 ## Layers
 
 ```
- ┌───────────────────────────── DeadSpin.Runtime (Unity) ─────────────────────────────┐
- │ GameSession ── PlayerInputReader ── TableCameraRig (uses Core TableViewNavigator)     │
- │      │                 Interactor ── Interactable (InspectableObject)               │
- │      │                 PrototypeHud      Environment builders (greybox)              │
- └──────┼───────────────────────────────────────────────────────────────────────────────┘
-        │ owns, listens to events
- ┌──────▼──────────────────────── DeadSpin.Core (pure C#) ──────────────────────────────┐
- │ Run ── Ledger (money/debt)   RoundFlow (phases)   RunOutcomeEvaluator   IRandomSource│
- │ GameStateMachine (modes)     RunConfig            TableViewNavigator (camera rules)   │
- └──────────────────────────────────────────────────────────────────────────────────────┘
- DeadSpin.Editor → PrototypeSceneMenu (uses Runtime factory)
- DeadSpin.Tests.EditMode → Core
+ ┌──────────────────────────────── DeadSpin.Runtime (Unity) ────────────────────────────────┐
+ │ GameSession (title, saves, meta) ── PlayerInputReader ── TableCameraRig ── Interactor       │
+ │      │ ticks, listens                                                                       │
+ │ RouletteTableController ── WheelView / BallSpinAnimator / BettingLayoutView / ChipStackView │
+ │ GameHud (table, rooms, offers, screens)   GameMasterView   EnvironmentDirector   AudioDirector│
+ └──────┼───────────────────────────────────────────────────────────────────────────────────────┘
+        │ owns one CasinoRun; calls its API; renders its events
+ ┌──────▼──────────────────────────────── DeadSpin.Core (pure C#) ─────────────────────────────┐
+ │ CasinoRun (round director, IGameHost) ── Run / Ledger / RoundFlow / TableGame / Wheel        │
+ │   RuleEngine + RuleCatalog ── GameMasterBrain / AuthorityPool / PlayerProfile / DialogueBank │
+ │   Contracts / PaymentSchedule ── Abilities / Inventory / Shop / SpecialPockets / Events /     │
+ │   Challenges ── Stages / FinalEncounter / Endings / CasinoRecords / MetaProgress / RunSetup   │
+ │ SaveSystem + MiniJson          RunSimulator (bots, invariants)                                │
+ └──────────────────────────────────────────────────────────────────────────────────────────────┘
+ DeadSpin.Editor → PrototypeSceneMenu, BalanceSimulatorMenu
+ DeadSpin.Tests.EditMode → Core (also run headless by tools/CoreTests)
 ```
 
 Rule: **Core never references Unity**; Runtime may reference Core; Editor may reference both.
@@ -59,17 +63,26 @@ The `noEngineReferences` flag on `DeadSpin.Core.asmdef` enforces this.
 | Paused | off (holds pose) | off | visible | 0 |
 | RunEnded | off | off | visible | 1 |
 
-## Planned systems (master prompt section 19) and where they will live
+## Systems added in Phases 3 to 10
 
-| System | Core part | Runtime part | Phase |
-|---|---|---|---|
-| Roulette manager / wheel generator | `WheelConfiguration`, `Pocket`, modifiers, validator | procedural mesh, transformation animation | 2–3 |
-| Spin | outcome selection (weighted, seeded) | wheel/ball animation driven to the result | 2 |
-| Betting manager | bet types, coverage sets, validation, payouts | betting layout, zones | 2, 4 |
-| Probability manager | per-pocket and per-bet odds | odds display | 2–3 |
-| Rule manager | rule definitions, conflicts, priority, lifetime | rule visuals/audio | 5 |
-| Game Master AI | Authority, intervention planner, player model | dialogue presentation, animation | 5 |
-| Economy | contracts, penalties, installments (extends Ledger) | contract UI | 6 |
-| Influence / abilities, events, challenges, special pockets | definitions and effects | presentation | 7 |
-| Audio, UI manager, casino rooms | none | presentation | 8 |
-| Progression, save | stages, unlocks, run randomisation, serialisable state | menus | 9 |
+| System | Type | Responsibility |
+|---|---|---|
+| `WheelTransforms`, `WheelFactory`, `WheelChange` | Core | Pure, validated wheel changes (clone, remove, add, swap, shuffle, resize, recolour, rings) and the diff the view animates |
+| `TableModifiers`, `PayoutModifier`, chip kinds, shakes | Core | Limits, closed sections, payout conditions (with hidden ones and loopholes), balls, chip physics properties |
+| `RuleDefinition`, `RuleEffects`, `RuleCatalog`, `RuleEngine` | Core | 44 data-driven rules; composition by priority, conflicts, durations, fairness checks |
+| `GameMasterBrain`, `AuthorityPool`, `PlayerProfile`, `DialogueBank` | Core | His budget, intervention planning against the player's habits, moods, personalities, lines |
+| `CasinoRun` | Core | The round director: owns every system, runs a round (stage, final phase, events, interventions, betting, spin, special pockets, contracts, challenges, installments), exposes the player API and events |
+| `ContractBook`, `PaymentSchedule`, `BankruptcyForecast` | Core | Contracts, installments with grace and default, warnings |
+| `AbilitySystem`, `Inventory`, `InfluenceWallet`, `Shop` | Core | Influence, 12 abilities, charges, cooldowns, special chips, shop shelf |
+| `SpecialPocketCatalog`, `EventDirector`, `AuctionState`, `ChallengeBoard` | Core | Special pockets, events, the auction, challenges |
+| `StageTable`, `FinalEncounter`, `EndingCatalog`, `CasinoRecords` | Core | Five stages, the four-phase final table, six endings, the rooms' content |
+| `MetaProgress`, `UnlockCatalog`, `RunSetup` | Core | Marks, unlocks, run randomisation |
+| `SaveSystem`, `MiniJson` | Core | Run and meta saves as JSON (including RNG state), between rounds only |
+| `RunSimulator` | Core | Bots play whole runs; invariant checks; reports |
+| `GameSession` | Runtime | Title, new/continue, autosave, meta save, modes, ticks the run |
+| `RouletteTableController` | Runtime | Bets with chip kinds, special bets, ability targeting, spin and respin, wheel animation, the Game Master's lines and the feed |
+| `GameHud` (3 partial files) | Runtime | Every screen and panel (IMGUI) |
+| `GameMasterView`, `EnvironmentDirector`, `AudioDirector` | Runtime | Figure animation and mood, lighting and wall names, synthesised sound and voice hook |
+| `BalanceSimulatorMenu` | Editor | Simulate runs, write `Docs/BALANCE_REPORT.md`; delete save files |
+
+Older rows above that mention `TableHud` and `PrototypeHud` are superseded by `GameHud`.

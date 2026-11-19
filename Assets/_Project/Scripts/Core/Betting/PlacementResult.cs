@@ -11,6 +11,12 @@ namespace DeadSpin.Core.Betting
         AboveMaximum,
         InsufficientFunds,
         NothingToRemove,
-        InvalidAmount
+        InvalidAmount,
+        /// <summary>A rule has closed this section of the layout.</summary>
+        SectionClosed,
+        /// <summary>The chips are sticky or a rule forbids taking bets back.</summary>
+        ChipsStuck,
+        /// <summary>The special bet's conditions are not met (e.g. no previous result for a Repeat bet).</summary>
+        NotEligible
     }
 }

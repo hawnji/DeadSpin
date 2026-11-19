@@ -18,6 +18,9 @@ namespace DeadSpin.Core.Economy
         public long TotalWinnings { get; private set; }
         public long TotalLosses { get; private set; }
 
+        /// <summary>Winnings stored in the Vault: safe from taxes and fines, but not available for betting until withdrawn.</summary>
+        public long Stored { get; private set; }
+
         /// <summary>Round number stamped onto new transactions. Set by the run.</summary>
         public int CurrentRound { get; set; }
 
@@ -118,6 +121,55 @@ namespace DeadSpin.Core.Economy
             Debt -= relief;
             Record(TransactionKind.DebtRelief, 0, -relief, reason);
             return relief;
+        }
+
+        /// <summary>Moves money from the balance into the Vault. Returns the amount stored.</summary>
+        public long Deposit(long amount)
+        {
+            RequirePositive(amount);
+            long moved = Math.Min(amount, Balance);
+            if (moved == 0) return 0;
+            Balance -= moved;
+            Stored = checked(Stored + moved);
+            Record(TransactionKind.VaultDeposit, -moved, 0, "Vault deposit");
+            return moved;
+        }
+
+        /// <summary>Moves money from the Vault back to the balance. Returns the amount withdrawn.</summary>
+        public long Withdraw(long amount)
+        {
+            RequirePositive(amount);
+            long moved = Math.Min(amount, Stored);
+            if (moved == 0) return 0;
+            Stored -= moved;
+            Balance = checked(Balance + moved);
+            Record(TransactionKind.VaultWithdrawal, moved, 0, "Vault withdrawal");
+            return moved;
+        }
+
+        /// <summary>Pays debt straight from the Vault. Returns the amount paid.</summary>
+        public long PayDebtFromVault(long amount, string reason)
+        {
+            RequirePositive(amount);
+            long payment = Math.Min(amount, Math.Min(Debt, Stored));
+            if (payment == 0) return 0;
+            Stored -= payment;
+            Debt -= payment;
+            Record(TransactionKind.DebtPayment, 0, -payment, reason);
+            return payment;
+        }
+
+        /// <summary>Restores totals from a save. The history starts again from this point.</summary>
+        public void Restore(long balance, long debt, long stored, long totalWinnings, long totalLosses)
+        {
+            if (balance < 0 || debt < 0 || stored < 0) throw new ArgumentOutOfRangeException(nameof(balance), "Saved money values cannot be negative.");
+            Balance = balance;
+            Debt = debt;
+            Stored = stored;
+            TotalWinnings = totalWinnings;
+            TotalLosses = totalLosses;
+            _history.Clear();
+            Record(TransactionKind.StartingFunds, 0, 0, "Restored from save");
         }
 
         private void Record(TransactionKind kind, long balanceDelta, long debtDelta, string reason)
