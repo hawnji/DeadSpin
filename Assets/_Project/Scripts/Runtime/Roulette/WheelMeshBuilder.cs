@@ -4,12 +4,27 @@ using UnityEngine;
 
 namespace DeadSpin.Runtime.Roulette
 {
+    /// <summary>Where and how one pocket is drawn: used for static wheels and every frame of a transformation.</summary>
+    public struct PocketSlot
+    {
+        /// <summary>Centre angle in degrees, clockwise from +Z seen from above.</summary>
+        public float CenterAngle;
+        /// <summary>Angular width in degrees (0 = collapsed).</summary>
+        public float Width;
+        public PocketColor Color;
+        /// <summary>0..1 multiplier on the band height (pockets "flip" through 0 when they change colour).</summary>
+        public float BandScale;
+        public bool Closed;
+    }
+
     /// <summary>
     /// Generates the rotor mesh for any pocket count: one wedge-shaped pocket floor and one coloured
     /// number band per pocket, plus gold frets between pockets. Pocket i is centred at angle
     /// i * 360 / N degrees, clockwise from the rotor's +Z seen from above, matching the order in
     /// <see cref="WheelConfiguration.Pockets"/>. Lists are reused between rebuilds to avoid garbage.
-    /// Submeshes: 0 pocket floors, 1 red band, 2 black band, 3 green band, 4 frets.
+    /// Submeshes: 0 pocket floors, 1 red band, 2 black band, 3 green band, 4 frets, 5 closed-pocket covers.
+    /// The rotor can also be built from arbitrary <see cref="PocketSlot"/>s, which is how wheel
+    /// transformations animate pockets sliding, splitting, emerging and collapsing.
     /// </summary>
     public sealed class WheelMeshBuilder
     {
@@ -18,7 +33,8 @@ namespace DeadSpin.Runtime.Roulette
         public const int SubmeshBlack = 2;
         public const int SubmeshGreen = 3;
         public const int SubmeshFret = 4;
-        public const int SubmeshCount = 5;
+        public const int SubmeshClosed = 5;
+        public const int SubmeshCount = 6;
 
         public float PocketInnerRadius = 0.2f;
         public float PocketOuterRadius = 0.31f;
@@ -60,27 +76,55 @@ namespace DeadSpin.Runtime.Roulette
             return new Vector3(Mathf.Sin(a) * radius, y, Mathf.Cos(a) * radius);
         }
 
+        private readonly List<PocketSlot> _slots = new List<PocketSlot>(128);
+
+        /// <summary>Evenly spaced slots for a configuration (the resting wheel).</summary>
+        public List<PocketSlot> SlotsFor(WheelConfiguration wheel)
+        {
+            _slots.Clear();
+            int n = wheel.PocketCount;
+            float step = 360f / n;
+            for (int i = 0; i < n; i++)
+            {
+                Pocket pocket = wheel.Pockets[i];
+                _slots.Add(new PocketSlot { CenterAngle = PocketAngle(i, n), Width = step, Color = pocket.Color, BandScale = 1f, Closed = !pocket.IsActive || pocket.Weight == 0 });
+            }
+            return _slots;
+        }
+
         public void Build(WheelConfiguration wheel, Mesh target)
+        {
+            Build(SlotsFor(wheel), target);
+        }
+
+        public void Build(IList<PocketSlot> slots, Mesh target)
         {
             _vertices.Clear();
             _normals.Clear();
             _uvs.Clear();
             for (int i = 0; i < SubmeshCount; i++) _triangles[i].Clear();
 
-            int n = wheel.PocketCount;
-            float step = 360f / n;
-            int segments = Mathf.Max(MinSegmentsPerPocket, Mathf.CeilToInt((float)TargetSegmentsAroundWheel / n));
+            int count = Mathf.Max(1, slots.Count);
+            int segments = Mathf.Max(MinSegmentsPerPocket, Mathf.CeilToInt((float)TargetSegmentsAroundWheel / count));
 
-            for (int i = 0; i < n; i++)
+            for (int i = 0; i < slots.Count; i++)
             {
-                float a0 = PocketAngle(i, n) - step * 0.5f;
-                float a1 = a0 + step;
-                Pocket pocket = wheel.Pockets[i];
+                PocketSlot slot = slots[i];
+                if (slot.Width <= 0.01f) continue;
+                float a0 = slot.CenterAngle - slot.Width * 0.5f;
+                float a1 = a0 + slot.Width;
+                int band = BandSubmesh(slot.Color);
+                float bandTop = Mathf.Lerp(PocketFloorHeight + 0.002f, BandHeight, Mathf.Clamp01(slot.BandScale));
 
                 AddAnnulusSector(SubmeshFloor, PocketInnerRadius, PocketOuterRadius, a0, a1, PocketFloorHeight, segments);
-                AddAnnulusSector(BandSubmesh(pocket), PocketOuterRadius, BandOuterRadius, a0, a1, BandHeight, segments);
+                if (slot.Closed)
+                {
+                    // A dark cover plate sits just above the floor of a closed (dead) pocket.
+                    AddAnnulusSector(SubmeshClosed, PocketInnerRadius + 0.004f, PocketOuterRadius - 0.004f, a0 + slot.Width * 0.08f, a1 - slot.Width * 0.08f, PocketFloorHeight + 0.006f, segments);
+                }
+                AddAnnulusSector(band, PocketOuterRadius, BandOuterRadius, a0, a1, bandTop, segments);
                 // Inner wall of the band so pockets read as recessed.
-                AddRing(BandSubmesh(pocket), PocketOuterRadius, a0, a1, PocketFloorHeight, BandHeight, segments, inward: true);
+                AddRing(band, PocketOuterRadius, a0, a1, PocketFloorHeight, bandTop, segments, inward: true);
 
                 // Fret on the leading edge of every pocket.
                 Vector3 mid = Polar(a0, (PocketInnerRadius + PocketOuterRadius) * 0.5f, PocketFloorHeight + FretHeight * 0.5f);
@@ -88,7 +132,7 @@ namespace DeadSpin.Runtime.Roulette
             }
 
             // Outer skirt of the rotor.
-            AddRing(SubmeshFloor, BandOuterRadius, 0f, 360f, 0f, BandHeight, n * segments, inward: false);
+            AddRing(SubmeshFloor, BandOuterRadius, 0f, 360f, 0f, BandHeight, Mathf.Max(64, count * segments), inward: false);
 
             target.Clear();
             target.indexFormat = _vertices.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
@@ -97,6 +141,40 @@ namespace DeadSpin.Runtime.Roulette
             target.SetUVs(0, _uvs);
             target.subMeshCount = SubmeshCount;
             for (int i = 0; i < SubmeshCount; i++) target.SetTriangles(_triangles[i], i, false);
+            target.RecalculateBounds();
+        }
+
+        /// <summary>
+        /// Builds a flat ring of coloured segments (the outer bonus ring). Each segment uses the
+        /// submesh given in <paramref name="segmentSubmesh"/>; widths are proportional to weights.
+        /// </summary>
+        public void BuildRing(Mesh target, float innerRadius, float outerRadius, float height, IList<float> widths, IList<int> segmentSubmesh, int submeshCount)
+        {
+            _vertices.Clear();
+            _normals.Clear();
+            _uvs.Clear();
+            for (int i = 0; i < SubmeshCount; i++) _triangles[i].Clear();
+
+            float total = 0f;
+            foreach (float w in widths) total += w;
+            float angle = 0f;
+            for (int i = 0; i < widths.Count; i++)
+            {
+                float sweep = 360f * widths[i] / total;
+                int sub = Mathf.Clamp(segmentSubmesh[i], 0, SubmeshCount - 1);
+                AddAnnulusSector(sub, innerRadius, outerRadius, angle, angle + sweep, height, Mathf.Max(3, Mathf.CeilToInt(sweep / 3f)));
+                Vector3 mid = Polar(angle, (innerRadius + outerRadius) * 0.5f, height + 0.003f);
+                AddBox(submeshCount - 1, mid, Quaternion.Euler(0f, angle, 0f), new Vector3(0.004f, 0.006f, outerRadius - innerRadius));
+                angle += sweep;
+            }
+            AddRing(0, outerRadius, 0f, 360f, 0f, height, 120, inward: false);
+
+            target.Clear();
+            target.SetVertices(_vertices);
+            target.SetNormals(_normals);
+            target.SetUVs(0, _uvs);
+            target.subMeshCount = submeshCount;
+            for (int i = 0; i < submeshCount; i++) target.SetTriangles(_triangles[i], i, false);
             target.RecalculateBounds();
         }
 
@@ -129,9 +207,9 @@ namespace DeadSpin.Runtime.Roulette
             target.RecalculateBounds();
         }
 
-        private static int BandSubmesh(Pocket pocket)
+        private static int BandSubmesh(PocketColor color)
         {
-            switch (pocket.Color)
+            switch (color)
             {
                 case PocketColor.Red: return SubmeshRed;
                 case PocketColor.Black: return SubmeshBlack;
