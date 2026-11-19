@@ -109,7 +109,7 @@ namespace DeadSpin.Runtime.Player
         {
             _camera = GetComponent<Camera>();
             if (input == null) input = GetComponentInParent<PlayerInputReader>();
-            if (input == null) input = FindFirstObjectByType<PlayerInputReader>();
+            if (input == null) input = FindAnyObjectByType<PlayerInputReader>();
 
             if (table == null || views == null || views.Length == 0)
             {

@@ -43,8 +43,8 @@ namespace DeadSpin.Runtime.Presentation
         private void Start()
         {
             if (session == null) session = GameSession.Active;
-            if (table == null) table = FindFirstObjectByType<RouletteTableController>();
-            if (ball == null) ball = FindFirstObjectByType<BallSpinAnimator>();
+            if (table == null) table = FindAnyObjectByType<RouletteTableController>();
+            if (ball == null) ball = FindAnyObjectByType<BallSpinAnimator>();
 
             _effects = NewSource("Effects", false);
             _ambience = NewSource("Ambience", true);

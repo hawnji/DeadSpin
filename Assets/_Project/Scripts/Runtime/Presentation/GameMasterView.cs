@@ -65,7 +65,7 @@ namespace DeadSpin.Runtime.Presentation
         private void Start()
         {
             if (session == null) session = GameSession.Active;
-            if (table == null) table = FindFirstObjectByType<RouletteTableController>();
+            if (table == null) table = FindAnyObjectByType<RouletteTableController>();
             if (table != null)
             {
                 table.Spoke += OnSpoke;

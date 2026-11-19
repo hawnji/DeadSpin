@@ -48,7 +48,7 @@ namespace DeadSpin.Runtime.UI
         private void Start()
         {
             if (session == null) session = GameSession.Active;
-            if (table == null) table = FindFirstObjectByType<RouletteTableController>();
+            if (table == null) table = FindAnyObjectByType<RouletteTableController>();
             if (session == null)
             {
                 Debug.LogError("[GameHud] No GameSession in the scene.", this);

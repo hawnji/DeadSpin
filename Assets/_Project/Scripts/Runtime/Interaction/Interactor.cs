@@ -32,7 +32,7 @@ namespace DeadSpin.Runtime.Interaction
         {
             _camera = GetComponent<Camera>();
             if (input == null) input = GetComponentInParent<PlayerInputReader>();
-            if (input == null) input = FindFirstObjectByType<PlayerInputReader>();
+            if (input == null) input = FindAnyObjectByType<PlayerInputReader>();
             if (input == null)
             {
                 Debug.LogError("[Interactor] No PlayerInputReader found.", this);
