@@ -46,9 +46,13 @@ namespace DeadSpin.Runtime.Presentation
         private void Start()
         {
             if (session == null) session = GameSession.Active;
-            foreach (Light light in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            // Walk the scene's roots instead of FindObjectsByType, whose sort-mode overload is deprecated in Unity 6.6.
+            foreach (GameObject root in gameObject.scene.GetRootGameObjects())
             {
-                _lights.Add(new LightState { Light = light, Intensity = light.intensity, Colour = light.color, IsKey = light.name == "TableSpot" });
+                foreach (Light light in root.GetComponentsInChildren<Light>(true))
+                {
+                    _lights.Add(new LightState { Light = light, Intensity = light.intensity, Colour = light.color, IsKey = light.name == "TableSpot" });
+                }
             }
             _ambientBase = RenderSettings.ambientLight;
             if (session != null) session.RunStarted += OnRunStarted;

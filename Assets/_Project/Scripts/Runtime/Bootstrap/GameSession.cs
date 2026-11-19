@@ -344,9 +344,9 @@ namespace DeadSpin.Runtime.Bootstrap
 
         private void ResolveReferences()
         {
-            if (playerInput == null) playerInput = FindFirstObjectByType<PlayerInputReader>();
-            if (cameraRig == null) cameraRig = FindFirstObjectByType<TableCameraRig>();
-            if (interactor == null) interactor = FindFirstObjectByType<Interactor>();
+            if (playerInput == null) playerInput = FindAnyObjectByType<PlayerInputReader>();
+            if (cameraRig == null) cameraRig = FindAnyObjectByType<TableCameraRig>();
+            if (interactor == null) interactor = FindAnyObjectByType<Interactor>();
 
             if (playerInput == null || cameraRig == null || interactor == null)
             {
